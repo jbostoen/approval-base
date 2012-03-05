@@ -235,26 +235,110 @@ abstract class ApprovalScheme extends DBObject
 	 */	 	
 	public function GetDisplayStatus($oPage)
 	{
+		$sImgOngoing = utils::GetAbsoluteUrlModulesRoot().'approval-base/waiting-reply.png';
 		$sImgApproved = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.png';
 		$sImgRejected = utils::GetAbsoluteUrlModulesRoot().'approval-base/reject.png';
+		$sImgArrow = utils::GetAbsoluteUrlModulesRoot().'approval-base/arrow-next.png';
+
+		$oPage->add_style(
+<<<EOF
+.approval-step-idle {
+	opacity: 0.4;
+	border-style: dashed;
+	border-width: 1px;
+	padding:10px;	
+}
+.approval-step-start {
+	border-style: solid;
+	border-width: 1px;
+	padding:10px;	
+}
+.approval-step-ongoing {
+	border-style: double;
+	border-width: 5px;
+	padding:10px;	
+}
+.approval-step-done-ok {
+	border-style: solid;
+	border-width: 2px;
+	padding:10px;	
+	border-color: #69BB69;
+}
+.approval-step-done-ko {
+	border-style: solid;
+	border-width: 2px;
+	padding:10px;
+	border-color: #BB6969;
+}
+.approval-idle{
+	opacity: 0.4;
+}
+.approval-timelimit {
+	font-weight: bolder;
+}
+.approval-theoreticallimit {
+	opacity: 0.4;
+}
+
+EOF
+		);
+		$sArrow = "<img src=\"$sImgArrow\" style=\"vertical-align:middle;\">";
 
 		$sHtml = '';
-		//$sHtml = (string)$this;
 
-		$sStarted = $this->Get('started');
-		$sEnded = $this->Get('ended');
-		switch ($this->Get('status'))
+		$sHtml .= "<table>\n";
+		$sHtml .= "<tr>\n";
+		$sHtml .= "</tr>\n";
+
+		// 1st row: show the timing information 
+		// (start) <started> (step) <step-end> ... <step-end> (step) <step-end> (end)
+		//
+		$iStarted = AttributeDateTime::GetAsUnixSeconds($this->Get('started'));
+		$sStarted = date('H:i', $iStarted);
+
+		$sHtml .= "<tr style=\"\">\n";
+		$sHtml .= "<td></td>\n";
+		$sHtml .= "<td>$sStarted</td>\n";
+
+		$iLastEnd = $iStarted;
+
+		foreach($this->GetSteps() as $iStep => $aStepData)
 		{
-		case 'ongoing':
-			$sHtml .= '<p>'.Dict::Format('Approval:Tab:Intro-ongoing', $sStarted).'</p>';
-			break;
-		case 'accepted':
-			$sHtml .= '<p>'."<img src=\"$sImgApproved\" style=\"vertical-align:middle;\">".Dict::Format('Approval:Tab:Intro-ended', $sStarted, $sEnded).'</p>';
-			break;
-		case 'rejected':
-			$sHtml .= '<p>'."<img src=\"$sImgRejected\" style=\"vertical-align:middle;\">".Dict::Format('Approval:Tab:Intro-ended', $sStarted, $sEnded).'</p>';
-			break;
+			switch ($aStepData['status'])
+			{
+			case 'done':
+			case 'timedout':
+				$sStepEnd = date('H:i', $aStepData['ended']);
+				break;
+
+			case 'ongoing':
+				$sStepEnd = '<span class="approval-timelimit" title="'.Dict::S('Approval:Tab:StepEnd-Limit').'">'.date('H:i', $iLastEnd + $aStepData['timeout_sec']).'</span>';
+				$iLastEnd = $iLastEnd + $aStepData['timeout_sec'];
+				break;
+
+			case 'idle':
+				$sStepEnd = '<span class="approval-theoreticallimit" title="'.Dict::Format('Approval:Tab:StepEnd-Theoretical', round($aStepData['timeout_sec'] / 60)).'">'.date('H:i', $iLastEnd + $aStepData['timeout_sec']).'</span>';
+				$iLastEnd = $iLastEnd + $aStepData['timeout_sec'];
+				break;
+			}
+
+			$sHtml .= "<td></td>\n";
+			$sHtml .= "<td>$sStepEnd</td>\n";
 		}
+		$sHtml .= "<td></td>\n";
+		$sHtml .= "</tr>\n";
+
+		// 2nd row: show the process steps
+		// start => step => ... => step => end
+		//
+		$sHtml .= "<tr style=\"vertical-align:middle;\">\n";
+		$sHtml .= "<td>\n";
+		$sHtml .= "<div class=\"approval-step-start\">".Dict::S('Approval:Tab:Start')."</div>\n";
+		$sHtml .= "</td>\n";
+
+		$sHtml .= "<td>\n";
+		$sHtml .= "<div>$sArrow</div>\n";
+		$sHtml .= "</td>\n";
 
 		foreach($this->GetSteps() as $iStep => $aStepData)
 		{
@@ -262,47 +346,64 @@ abstract class ApprovalScheme extends DBObject
 			{
 			case 'ongoing':
 				$sStepSumary = Dict::S('Approval:Tab:StepSumary-Ongoing');
+				$sDivClass = "approval-step-ongoing";
+				$sArrowDivClass = "approval-idle";
 				break;
 
 			case 'done':
 				if ($aStepData['approved'])
 				{
 					$sStepSumary = Dict::S('Approval:Tab:StepSumary-OK');
+					$sDivClass = "approval-step-done-ok";
 				}
 				else
 				{
 					$sStepSumary = Dict::S('Approval:Tab:StepSumary-KO');
+					$sDivClass = "approval-step-done-ko";
 				}
+				$sArrowDivClass = "";
 				break;
 
 			case 'timedout':
 				if ($aStepData['timeout_approve'])
 				{
 					$sStepSumary = Dict::S('Approval:Tab:StepSumary-OK-Timeout');
+					$sDivClass = "approval-step-done-ok";
 				}
 				else
 				{
 					$sStepSumary = Dict::S('Approval:Tab:StepSumary-KO-Timeout');
+					$sDivClass = "approval-step-done-ko";
 				}
+				$sArrowDivClass = "";
 				break;
 
 			default:
 			case 'idle':
-				$sStepSumary = '';
+				if ($this->Get('status') == 'ongoing')
+				{
+					$sStepSumary = Dict::S('Approval:Tab:StepSumary-Idle');
+					$sDivClass = "approval-step-idle";
+					$sArrowDivClass = "approval-idle";
+				}
+				else
+				{
+					$sStepSumary = Dict::S('Approval:Tab:StepSumary-Skipped');
+					$sDivClass = "approval-step-idle";
+					$sArrowDivClass = "approval-idle";
+				}
 				break;
 			}
 
-			// The step is 0-based, display it 1-based
-			$sHtml .= '<p>'.Dict::Format('Approval:Tab:Step', $iStep + 1).'</p>';
-			$sHtml .= '<p>'.$sStepSumary.'</p>';
-
-			$aDisplayData = array();
+			$sStepHtml = '<div>'.$sStepSumary.'<div>';
+			$sStepHtml .= '<table>';
 			foreach($aStepData['approvers'] as $aApproverData)
 			{
 				$oApprover = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
 				if ($oApprover)
 				{
-					$sApprover = $oApprover->GetHyperLink();
+					//$sApprover = $oApprover->GetHyperLink();
+					$sApprover = $oApprover->GetName();
 				}
 				else
 				{
@@ -311,7 +412,8 @@ abstract class ApprovalScheme extends DBObject
 				if (array_key_exists('approval', $aApproverData))
 				{
 					$bApproved = $aApproverData['approval'];
-					$sAnswerDate = $aApproverData['answer_time'];
+					$sAnswerDate = date('H:i', $aApproverData['answer_time']);
+					
 					if ($bApproved)
 					{
 						$sAnswer = "<img src=\"$sImgApproved\" style=\"vertical-align:middle;\" title=\"$sAnswerDate\">";
@@ -323,19 +425,44 @@ abstract class ApprovalScheme extends DBObject
 				}
 				else
 				{
-					$sAnswer = '&nbsp;';
+					$sAnswer = "<img src=\"$sImgOngoing\" style=\"vertical-align:middle;\">";
 				}
-				$aDisplayData[] = array(
-					'approver' => $sApprover,
-					'answer' => $sAnswer,
-				);
+				$sStepHtml .= '<tr>';
+				$sStepHtml .= '<td>'.$sApprover.'</td>';
+				$sStepHtml .= '<td>'.$sAnswer.'</td>';
+				$sStepHtml .= '</tr>';
 			}
-		
-			$aDisplayConfig = array();
-			$aDisplayConfig['approver'] = array('label' => Dict::S('Approval:Tab:Col-Approver'), 'description' => '');
-			$aDisplayConfig['answer'] = array('label' => Dict::S('Approval:Tab:Col-Answer'), 'description' => '');
-			$sHtml.= $oPage->GetTable($aDisplayConfig, $aDisplayData);
+			$sStepHtml .= '</table>';
+			$sStepHtml .= '</div>';
+			$sHtml .= "<td>\n";
+			$sHtml .= "<div class=\"$sDivClass\">$sStepHtml</div>\n";
+			$sHtml .= "</td>\n";
+
+			$sHtml .= "<td>\n";
+			$sHtml .= "<div class=\"$sArrowDivClass\">$sArrow</div>\n";
+			$sHtml .= "</td>\n";
 		}
+
+		switch ($this->Get('status'))
+		{
+		case 'ongoing':
+			$sFinalStatus = "<img src=\"$sImgOngoing\" style=\"vertical-align:middle;\">";
+			$sDivClass = "approval-step-idle";
+			break;
+		case 'accepted':
+			$sFinalStatus = "<img src=\"$sImgApproved\" style=\"vertical-align:middle;\">";
+			$sDivClass = "approval-step-done-ok";
+			break;
+		case 'rejected':
+			$sFinalStatus = "<img src=\"$sImgRejected\" style=\"vertical-align:middle;\">";
+			$sDivClass = "approval-step-done-ko";
+			break;
+		}
+		$sHtml .= "<td>\n";
+		$sHtml .= "<div class=\"$sDivClass\">".Dict::S('Approval:Tab:End').": $sFinalStatus</div>\n";
+		$sHtml .= "</td>\n";
+		$sHtml .= "</tr>\n";
+		$sHtml .= "</table>\n";
 
 		return $sHtml;
 	}
@@ -404,6 +531,15 @@ abstract class ApprovalScheme extends DBObject
 				else
 				{
 					$this->DoReject($oObject);
+				}
+				if ($oObject->IsModified())
+				{
+					$oChange = MetaModel::NewObject("CMDBChange");
+					$oChange->Set("date", time());
+					$oChange->Set("userinfo", Dict::S('Approval:ChangeTracking-MoreInfo'));
+					$iChangeId = $oChange->DBInsert();
+
+					$oObject->DBUpdateTracked($oChange);
 				}
 			}
 		}
@@ -542,9 +678,9 @@ abstract class ApprovalScheme extends DBObject
 		$aList = MetaModel::FlattenZlist(MetaModel::GetZListItems(get_class($oObj), 'details'));
 		$sBody = '<html>';
 		$sBody .= '<body>';
-		$sBody .= '<h1>'.$sTitle.'</h1>';
+		$sBody .= '<h3>'.$sTitle.'</h3>';
 		$sBody .= '<p>'.$sIntroduction.'</p>';
-		$sBody .= '<h2>'.MetaModel::GetName(get_class($oObj)).": ".$oObj->GetHyperlink().'</h2>';
+		$sBody .= '<h4>'.MetaModel::GetName(get_class($oObj)).": ".$oObj->GetHyperlink().'</h4>';
 		$sBody .= '<table>';
 		foreach($aList as $sAttCode)
 		{
@@ -553,7 +689,7 @@ abstract class ApprovalScheme extends DBObject
 				$oAttDef = MetaModel::GetAttributeDef(get_class($oObj), $sAttCode);
 				if ($oAttDef->IsScalar())
 				{
-					$sBody .= '<tr><td>'.$oAttDef->GetLabel().'</td><td>'.$oObj->GetAsHTML($sAttCode).'</td></tr>'."\n";
+					$sBody .= '<tr style="font-size:smaller;"><td>'.$oAttDef->GetLabel().'</td><td>'.$oObj->GetAsHTML($sAttCode).'</td></tr>'."\n";
 				}
 			}
 		}
@@ -595,7 +731,46 @@ abstract class ApprovalScheme extends DBObject
 		}
 	}
 	
-
+	/**
+	 * Build and output the approval form for a given user
+	 **/	
+	public function DisplayApprovalForm($oPage, $oApprover, $oObject, $sToken)
+	{
+		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
+	
+		$sTitle = MetaModel::ApplyParams($this->GetFormTitle(get_class($oApprover), $oApprover->GetKey()), $aParams);
+		$sBody = MetaModel::ApplyParams($this->GetFormBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
+	
+		$oPage->add("<h1>".$sTitle."</h1>\n");
+		$oPage->add("<p>".$sBody."</p>\n");
+	
+		// Object details
+		//
+		$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
+		
+		// Build the forms
+		//
+		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
+		$oPage->add("<form action=\"\" id=\"form_approve\" method=\"post\">\n");
+		$oPage->add("<input type=\"hidden\" id=\"my_operation\" name=\"operation\" value=\"_not_set_\">");
+		$oPage->add("<input type=\"hidden\" name=\"token\" value=\"$sToken\">");
+	//	$oP->add("<input type=\"hidden\" name=\"transaction_id\" value=\"".utils::GetNewTransactionId()."\">\n");
+	
+		$oPage->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('approve');\" value=\"".Dict::S('Approval:Form:Btn-Approve')."\">");
+		$oPage->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('reject');\" value=\"".Dict::S('Approval:Form:Btn-Reject')."\">");
+	
+		$oPage->add("</form>");
+		$oPage->add("</div>");
+				// 
+		$oPage->add_script(
+<<<EOF
+function SetStimulusToApply(sOperation)
+{
+	$('#operation').val(sOperation);
+}
+EOF
+);
+	}
 
 }
 

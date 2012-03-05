@@ -25,16 +25,20 @@
 
 Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Tab:Title' => 'Approval status',
-	'Approval:Tab:Intro-ongoing' => 'An approval is ongoing since %1$s',
-	'Approval:Tab:Intro-ended' => 'An approval process has been executed between %1$s and %2$s',
-	'Approval:Tab:Step' => 'Step #%1$d',
+	'Approval:Tab:Start' => 'Start',
+	'Approval:Tab:End' => 'End',
+	'Approval:Tab:StepEnd-Limit' => 'Time limit (implicit result)',
+	'Approval:Tab:StepEnd-Theoretical' => 'Theoretical time limit (duration limited to %1$s mn)',
 	'Approval:Tab:StepSumary-Ongoing' => 'Waiting for the replies',
 	'Approval:Tab:StepSumary-OK' => 'Approved',
 	'Approval:Tab:StepSumary-KO' => 'Rejected',
 	'Approval:Tab:StepSumary-OK-Timeout' => 'Approved implicitely (run out of time)',
 	'Approval:Tab:StepSumary-KO-Timeout' => 'Rejected implicitely (run out of time)',
-	'Approval:Tab:Col-Approver' => 'Approver',
-	'Approval:Tab:Col-Answer' => 'Answer',
+	'Approval:Tab:StepSumary-Idle' => 'Not started',
+	'Approval:Tab:StepSumary-Skipped' => 'Skipped',
+
+	'OLD-Approval:Tab:Col-Approver' => 'Approver',
+	'OLD-Approval:Tab:Col-Answer' => 'Answer',
 
 	'Approval:Form:Title' => 'Approval form',
 	'Approval:Form:Btn-Approve' => 'Approve',
@@ -49,5 +53,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Form:AnswerRecorded-Continue' => 'Your answer has been recorded. The approval process in continuing.',
 	'Approval:Form:AnswerRecorded-Approved' => 'Your answer has been recorded: the approval is complete with success.',
 	'Approval:Form:AnswerRecorded-Rejected' => 'Your answer has been recorded: the approval is complete with failure.',
+
+	'Approval:ChangeTracking-MoreInfo' => 'Approval process',
 ));
 ?>

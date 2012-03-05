@@ -131,42 +131,7 @@ function ShowApprovalForm($oP, $sToken)
 {
 	list($oScheme, $iStep, $oApprover, $oObject) = GetContext($oP, $sToken);
 
-	// Header
-	//
-	$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
-
-	$sTitle = MetaModel::ApplyParams($oScheme->GetFormTitle(get_class($oApprover), $oApprover->GetKey()), $aParams);
-	$sBody = MetaModel::ApplyParams($oScheme->GetFormBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
-
-	$oP->add("<h1>".$sTitle."</h1>\n");
-	$oP->add("<p>".$sBody."</p>\n");
-
-	// Object details
-	//
-	$oObject->DisplayBareProperties($oP/*, $bEditMode = false*/);
-
-	// Build the forms
-	//
-	$oP->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
-	$oP->add("<form action=\"\" id=\"form_approve\" method=\"post\">\n");
-	$oP->add("<input type=\"hidden\" id=\"my_operation\" name=\"operation\" value=\"_not_set_\">");
-	$oP->add("<input type=\"hidden\" name=\"token\" value=\"$sToken\">");
-//	$oP->add("<input type=\"hidden\" name=\"transaction_id\" value=\"".utils::GetNewTransactionId()."\">\n");
-
-	$oP->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('approve');\" value=\"".Dict::S('Approval:Form:Btn-Approve')."\">");
-	$oP->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('reject');\" value=\"".Dict::S('Approval:Form:Btn-Reject')."\">");
-
-	$oP->add("</form>");
-	$oP->add("</div>");
-			// 
-	$oP->add_script(
-<<<EOF
-	function SetStimulusToApply(sOperation)
-	{
-		$('#operation').val(sOperation);
-	}
-EOF
-);
+	$oScheme->DisplayApprovalForm($oP, $oApprover, $oObject, $sToken);
 }
 
 function SubmitAnswer($oP, $sToken, $bApprove)
@@ -203,9 +168,6 @@ try
 	require_once(MODULESROOT.'approval-base/approvalwebpage.class.inc.php');
 	$sOperation = utils::ReadParam('operation', '');
 	
-	require_once(APPROOT.'/application/loginwebpage.class.inc.php');
-	LoginWebPage::DoLogin(false /* bMustBeAdmin */, true /* IsAllowedToPortalUsers */); // Check user rights and prompt if needed
-
 //	$oUserOrg = GetUserOrg();
 	$sCSSFileSuffix = 'approval-base/approve.css';
 	if (@file_exists(MODULESROOT.$sCSSFileSuffix))
