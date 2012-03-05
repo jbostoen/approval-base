@@ -47,11 +47,11 @@ class ApprovalWebPage extends NiceWebPage
 		$this->add_linked_stylesheet("../css/jquery.autocomplete.css");
 		if ($sAlternateStyleSheet != '')
 		{
-			$this->add_linked_stylesheet("../portal/$sAlternateStyleSheet/portal.css");
+			$this->add_linked_stylesheet(utils::GetAbsoluteUrlModulesRoot()."approval-base/$sAlternateStyleSheet/approve.css");
 		}
 		else
 		{
-			$this->add_linked_stylesheet("../portal/portal.css");
+			$this->add_linked_stylesheet(utils::GetAbsoluteUrlModulesRoot()."approval-base/approve.css");
 		}
 		$this->add_linked_script('../js/jquery.layout.min.js');
 		$this->add_linked_script('../js/jquery.ba-bbq.min.js');

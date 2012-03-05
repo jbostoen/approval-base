@@ -43,6 +43,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Form:Title' => 'Approval form',
 	'Approval:Form:Btn-Approve' => 'Approve',
 	'Approval:Form:Btn-Reject' => 'Reject',
+	'Approval:Form:ViewMoreInfo' => 'View more information',
 
 	'Approval:Form:AlreadyApproved' => 'Sorry, the approval process for %1$s is already complete with result: Approved.',
 	'Approval:Form:AlreadyRejected' => 'Sorry, the approval process for %1$s is already complete with result: Rejected.',

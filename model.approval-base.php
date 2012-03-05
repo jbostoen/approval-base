@@ -102,46 +102,22 @@ abstract class ApprovalScheme extends DBObject
 	}
 
 	/**
-	 * Called when the email is being created for a given approver
+	 * Called when the email/form is being created for a given approver
 	 * 	 
 	 * @param string sContactClass The approver object class
 	 * @param string iContactId The approver object id
 	 * @return string The subject in pure text
 	 */	 	
-	abstract public function GetEmailSubject($sContactClass, $iContactId);
+	abstract public function GetTitle($sContactClass, $iContactId);
 
 	/**
-	 * Called when the email is being created for a given approver
+	 * Called when the email/form is being created for a given approver
 	 * 	 
 	 * @param string sContactClass The approver object class
 	 * @param string iContactId The approver object id
 	 * @return string The email body in HTML
 	 */	 	
-	abstract public function GetEmailBody($sContactClass, $iContactId);
-
-	/**
-	 * Called when the email is being created for a given approver
-	 * 	 
-	 * @return string The label of the hyperlink to the approval form
-	 */	 	
-	abstract public function GetEmailLinkLabel();
-	/**
-	 * Called when the form is being shown to an approver
-	 * 	 
-	 * @param string sContactClass The approver object class
-	 * @param string iContactId The approver object id
-	 * @return string The title in pure text
-	 */	 	
-	abstract public function GetFormTitle($sContactClass, $iContactId);
-
-	/**
-	 * Called when the form is being shown to an approver
-	 * 	 
-	 * @param string sContactClass The approver object class
-	 * @param string iContactId The approver object id
-	 * @return string The body in pure text
-	 */	 	
-	abstract public function GetFormBody($sContactClass, $iContactId);
+	abstract public function GetIntroduction($sContactClass, $iContactId);
 
 	/**
 	 * Called when the approval is being completed with success
@@ -309,6 +285,7 @@ EOF
 			case 'done':
 			case 'timedout':
 				$sStepEnd = date('H:i', $aStepData['ended']);
+				$iLastEnd = $aStepData['ended'];
 				break;
 
 			case 'ongoing':
@@ -668,9 +645,8 @@ EOF
 	{
 		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
 
-		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
-		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
-		$sLinkLabel = MetaModel::ApplyParams($this->GetEmailLinkLabel(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
+		$sTitle = MetaModel::ApplyParams($this->GetTitle(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
+		$sIntroduction = MetaModel::ApplyParams($this->GetIntroduction(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
 		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
 
 		// Note: cloned from module 'Notify me !'
@@ -680,6 +656,16 @@ EOF
 		$sBody .= '<body>';
 		$sBody .= '<h3>'.$sTitle.'</h3>';
 		$sBody .= '<p>'.$sIntroduction.'</p>';
+		$sReplyOk = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=approve';
+		$sReplyKo = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=reject';
+		$sMoreInfo = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=';
+		$sBody .= '<p>';
+		$sBody .= '<a href="'.$sReplyOk.'">'.Dict::S('Approval:Form:Btn-Approve').'</a>&nbsp;&nbsp;&nbsp;';
+		$sBody .= '<a href="'.$sReplyKo.'">'.Dict::S('Approval:Form:Btn-Reject').'</a>&nbsp;&nbsp;&nbsp;';
+		$sBody .= '<a href="'.$sMoreInfo.'">'.Dict::S('Approval:Form:ViewMoreInfo').'</a>';
+		$sBody .= '</p>';
+
+/*
 		$sBody .= '<h4>'.MetaModel::GetName(get_class($oObj)).": ".$oObj->GetHyperlink().'</h4>';
 		$sBody .= '<table>';
 		foreach($aList as $sAttCode)
@@ -694,8 +680,7 @@ EOF
 			}
 		}
 		$sBody .= '</table>';
-		$sApprovalUrl = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken;
-		$sBody .= '<p><a href="'.$sApprovalUrl.'">'.$sLinkLabel.'</a></p>';
+*/
 		$sBody .= '</body>';
 		$sBody .= '</html>';
 
@@ -738,19 +723,12 @@ EOF
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
 	
-		$sTitle = MetaModel::ApplyParams($this->GetFormTitle(get_class($oApprover), $oApprover->GetKey()), $aParams);
-		$sBody = MetaModel::ApplyParams($this->GetFormBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
+		$sTitle = MetaModel::ApplyParams($this->GetTitle(get_class($oApprover), $oApprover->GetKey()), $aParams);
+		$sBody = MetaModel::ApplyParams($this->GetIntroduction(get_class($oApprover), $oApprover->GetKey()), $aParams);
 	
+		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
 		$oPage->add("<h1>".$sTitle."</h1>\n");
 		$oPage->add("<p>".$sBody."</p>\n");
-	
-		// Object details
-		//
-		$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
-		
-		// Build the forms
-		//
-		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
 		$oPage->add("<form action=\"\" id=\"form_approve\" method=\"post\">\n");
 		$oPage->add("<input type=\"hidden\" id=\"my_operation\" name=\"operation\" value=\"_not_set_\">");
 		$oPage->add("<input type=\"hidden\" name=\"token\" value=\"$sToken\">");
@@ -770,8 +748,11 @@ function SetStimulusToApply(sOperation)
 }
 EOF
 );
-	}
 
+		// Object details
+		//
+		$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
+	}
 }
 
 
