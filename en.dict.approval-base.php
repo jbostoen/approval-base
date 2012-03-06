@@ -37,24 +37,34 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Tab:StepSumary-Idle' => 'Not started',
 	'Approval:Tab:StepSumary-Skipped' => 'Skipped',
 
-	'OLD-Approval:Tab:Col-Approver' => 'Approver',
-	'OLD-Approval:Tab:Col-Answer' => 'Answer',
+	'Approval:Tab:Error' => 'An error occured during the approval process: %1$s',
 
-	'Approval:Form:Title' => 'Approval form',
-	'Approval:Form:Btn-Approve' => 'Approve',
-	'Approval:Form:Btn-Reject' => 'Reject',
-	'Approval:Form:ViewMoreInfo' => 'View more information',
+	'Approval:Error:Email' => 'The email could not be sent (%1$s)',
 
-	'Approval:Form:AlreadyApproved' => 'Sorry, the approval process for %1$s is already complete with result: Approved.',
-	'Approval:Form:AlreadyRejected' => 'Sorry, the approval process for %1$s is already complete with result: Rejected.',
+	'Approval:Action-Approve' => 'Approve',
+	'Approval:Action-Reject' => 'Reject',
+	'Approval:Action-ViewMoreInfo' => 'View more information',
 
-	'Approval:Form:StepApproved' => 'Sorry, the approval step for %1$s is already complete with result: Approved. The approval process in continuing.',
-	'Approval:Form:StepRejected' => 'Sorry, the approval step for %1$s is already complete with result: Rejected. The approval process in continuing.',
+	'Approval:Form:Title' => 'Approval',
+	'Approval:Form:Ref' => 'Approval process for %1$s',
 
-	'Approval:Form:AnswerRecorded-Continue' => 'Your answer has been recorded. The approval process in continuing.',
-	'Approval:Form:AnswerRecorded-Approved' => 'Your answer has been recorded: the approval is complete with success.',
-	'Approval:Form:AnswerRecorded-Rejected' => 'Your answer has been recorded: the approval is complete with failure.',
+	'Approval:Form:ApproverDeleted' => 'Sorry, the record corresponding to your identity has been deleted.',
+	'Approval:Form:ObjectDeleted' => 'Sorry, the object of the approval has been deleted.',
+
+	'Approval:Form:AlreadyApproved' => 'Sorry, the process has already been completed with result: Approved.',
+	'Approval:Form:AlreadyRejected' => 'Sorry, the process has already been completed with result: Rejected.',
+
+	'Approval:Form:StepApproved' => 'Sorry, this phase has been completed with result: Approved. The approval process is continuing...',
+	'Approval:Form:StepRejected' => 'Sorry, this phase has been completed with result: Rejected. The approval process is continuing...',
+
+	'Approval:Form:AnswerRecorded-Continue' => 'Your answer has been recorded. The approval process is continuing.',
+	'Approval:Form:AnswerRecorded-Approved' => 'Your answer has been recorded: the approval is now complete with success.',
+	'Approval:Form:AnswerRecorded-Rejected' => 'Your answer has been recorded: the approval is now complete with failure.',
 
 	'Approval:ChangeTracking-MoreInfo' => 'Approval process',
+
+	'Approval:Ongoing-Title' => 'Ongoing approvals',
+	'Approval:Ongoing-Title+' => 'Approval processes for objects of class %1$s',
+	'Approval:Ongoing-NothingCurrently' => 'There is no ongoing approval.',
 ));
 ?>

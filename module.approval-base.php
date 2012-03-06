@@ -55,7 +55,8 @@ SetupWebPage::AddModule(
 		// Default settings
 		//
 		'settings' => array(
-			// Module specific settings go here, if any
+			'email_sender' => 'john.foo@john.business.com',
+			'email_reply_to' => 'joao.ningem@john.business.com',
 		),
 	)
 );

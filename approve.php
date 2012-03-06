@@ -58,25 +58,31 @@ function GetContext($oP, $sToken)
 	$iApproverId = $aToken[3];
 	$sPassCode = $aToken[4];
 
-	try
+	$oScheme = MetaModel::GetObject('ApprovalScheme', $iSchemeId, false);
+	if (!$oScheme)
 	{
-		$oScheme = MetaModel::GetObject('ApprovalScheme', $iSchemeId);
-		$oApprover = MetaModel::GetObject($sApproverClass, $iApproverId);
-		$oObject = MetaModel::GetObject($oScheme->Get('obj_class'), $oScheme->Get('obj_key'));
+		$oP->p(Dict::S('Approval:Form:ObjectDeleted'));
+		throw new QuitException();
 	}
-	catch(CoreException $e)
+
+	$oApprover = MetaModel::GetObject($sApproverClass, $iApproverId, false);
+	if (!$oApprover)
 	{
-		throw new CoreException("Unexpected value for token: '$sToken' does not have the required format");
+		$oP->p(Dict::S('Approval:Form:ApproverDeleted'));
+		throw new QuitException();
 	}
+
+	$oObject = MetaModel::GetObject($oScheme->Get('obj_class'), $oScheme->Get('obj_key'));
+	$oP->add('<h2>'.Dict::Format('Approval:Form:Ref', $oObject->GetHyperLink()).'</h2>');
 
 	if ($oScheme->Get('status') == 'accepted')
 	{
-		$oP->p(Dict::Format('Approval:Form:AlreadyApproved', $oObject->GetHyperLink()));
+		$oP->p(Dict::S('Approval:Form:AlreadyApproved'));
 		throw new QuitException();
 	}
 	elseif ($oScheme->Get('status') == 'rejected')
 	{
-		$oP->p(Dict::Format('Approval:Form:AlreadyRejected', $oObject->GetHyperLink()));
+		$oP->p(Dict::S('Approval:Form:AlreadyRejected'));
 		throw new QuitException();
 	}
 
@@ -86,12 +92,12 @@ function GetContext($oP, $sToken)
 	{
 		if ($aSteps[$iStep]['approved'])
 		{
-			$oP->p(Dict::Format('Approval:Form:StepApproved', $oObject->GetHyperLink()));
+			$oP->p(Dict::S('Approval:Form:StepApproved'));
 			throw new QuitException();
 		}
 		else
 		{
-			$oP->p(Dict::Format('Approval:Form:StepRejected', $oObject->GetHyperLink()));
+			$oP->p(Dict::S('Approval:Form:StepRejected'));
 			throw new QuitException();
 		}
 	}

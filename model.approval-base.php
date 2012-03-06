@@ -63,6 +63,7 @@ abstract class ApprovalScheme extends DBObject
 		MetaModel::Init_AddAttribute(new AttributeInteger("current_step", array("allowed_values"=>null, "sql"=>"current_step", "default_value"=>0, "is_null_allowed"=>false, "depends_on"=>array())));
 
 		MetaModel::Init_AddAttribute(new AttributeEnum("status", array("allowed_values"=>new ValueSetEnum('ongoing,accepted,rejected'), "sql"=>"status", "default_value"=>"ongoing", "is_null_allowed"=>false, "depends_on"=>array())));
+		MetaModel::Init_AddAttribute(new AttributeString("last_error", array("allowed_values"=>null, "sql"=>"last_error", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
 
 		// Serialized array of steps (ordered)
 		// A step is and array of
@@ -102,22 +103,31 @@ abstract class ApprovalScheme extends DBObject
 	}
 
 	/**
-	 * Called when the email/form is being created for a given approver
+	 * Called when the email is being created for a given approver
 	 * 	 
 	 * @param string sContactClass The approver object class
 	 * @param string iContactId The approver object id
 	 * @return string The subject in pure text
 	 */	 	
-	abstract public function GetTitle($sContactClass, $iContactId);
+	abstract public function GetEmailSubject($sContactClass, $iContactId);
 
 	/**
-	 * Called when the email/form is being created for a given approver
+	 * Called when the email is being created for a given approver
 	 * 	 
 	 * @param string sContactClass The approver object class
 	 * @param string iContactId The approver object id
 	 * @return string The email body in HTML
 	 */	 	
-	abstract public function GetIntroduction($sContactClass, $iContactId);
+	abstract public function GetEmailBody($sContactClass, $iContactId);
+
+	/**
+	 * Called when the form is being created for a given approver
+	 * 	 
+	 * @param string sContactClass The approver object class
+	 * @param string iContactId The approver object id
+	 * @return string The form body in HTML
+	 */	 	
+	abstract public function GetFormBody($sContactClass, $iContactId);
 
 	/**
 	 * Called when the approval is being completed with success
@@ -165,11 +175,11 @@ abstract class ApprovalScheme extends DBObject
 	 * Official mean to declare a new step at the end of the existing sequence
 	 * 	 
 	 * @param array aContact An array of array('class' => ..., 'id' => ...)
-	 * @param integer $iTimeoutSec The object being under approval process
+	 * @param integer $iTimeoutSec The timeout duration if (0 to disable the timeout feature)
 	 * @param boolean $bApproveOnTimeout Set to true to approve in case of timeout for the current step
 	 * @return void
 	 */
-	public function AddStep($aContacts, $iTimeoutSec, $bApproveOnTimeout)
+	public function AddStep($aContacts, $iTimeoutSec = 0, $bApproveOnTimeout = true)
 	{
 		$aApprovers = array();
 		foreach($aContacts as $aApproverData)
@@ -260,23 +270,25 @@ EOF
 		);
 		$sArrow = "<img src=\"$sImgArrow\" style=\"vertical-align:middle;\">";
 
-		$sHtml = '';
+		// Build the list of display information
+		$aDisplayData = array();
 
-		$sHtml .= "<table>\n";
-		$sHtml .= "<tr>\n";
-		$sHtml .= "</tr>\n";
+		$aDisplayData[] = array(
+			'date_html' => '',
+			'time_html' => '',
+			'content_html' => "<div class=\"approval-step-start\">".Dict::S('Approval:Tab:Start')."</div>\n",
+		);
 
-		// 1st row: show the timing information 
-		// (start) <started> (step) <step-end> ... <step-end> (step) <step-end> (end)
-		//
 		$iStarted = AttributeDateTime::GetAsUnixSeconds($this->Get('started'));
-		$sStarted = date('H:i', $iStarted);
-
-		$sHtml .= "<tr style=\"\">\n";
-		$sHtml .= "<td></td>\n";
-		$sHtml .= "<td>$sStarted</td>\n";
-
 		$iLastEnd = $iStarted;
+
+		$sStarted = $this->GetDisplayTime($iStarted);
+		$sCurrDay = $this->GetDisplayDay($iStarted);
+		$aDisplayData[] = array(
+			'date_html' => $sCurrDay,
+			'time_html' => $sStarted,
+			'content_html' => $sArrow,
+		);
 
 		foreach($this->GetSteps() as $iStep => $aStepData)
 		{
@@ -284,79 +296,73 @@ EOF
 			{
 			case 'done':
 			case 'timedout':
-				$sStepEnd = date('H:i', $aStepData['ended']);
-				$iLastEnd = $aStepData['ended'];
+				$iStepEnd = $aStepData['ended'];
+				$sTimeClass = '';
+				$sTimeInfo = '';
+
+				if ($aStepData['approved'])
+				{
+					$sDivClass = "approval-step-done-ok";
+					if ($aStepData['status'] == 'timedout')
+					{
+						$sStepSumary = Dict::S('Approval:Tab:StepSumary-OK-Timeout');
+					}
+					else
+					{
+						$sStepSumary = Dict::S('Approval:Tab:StepSumary-OK');
+					}
+				}
+				else
+				{
+					$sDivClass = "approval-step-done-ko";
+					if ($aStepData['status'] == 'timedout')
+					{
+						$sStepSumary = Dict::S('Approval:Tab:StepSumary-KO-Timeout');
+					}
+					else
+					{
+						$sStepSumary = Dict::S('Approval:Tab:StepSumary-KO');
+					}
+				}
+				$sArrowDivClass = "";
 				break;
 
 			case 'ongoing':
-				$sStepEnd = '<span class="approval-timelimit" title="'.Dict::S('Approval:Tab:StepEnd-Limit').'">'.date('H:i', $iLastEnd + $aStepData['timeout_sec']).'</span>';
-				$iLastEnd = $iLastEnd + $aStepData['timeout_sec'];
-				break;
+				if ($iLastEnd && $aStepData['timeout_sec'] > 0)
+				{
+					$iStepEnd = $iLastEnd + $aStepData['timeout_sec'];
+					$sTimeClass = 'approval-timelimit';
+					$sTimeInfo = Dict::S('Approval:Tab:StepEnd-Limit');
+				}
+				else
+				{
+					// The limit cannot be determined
+					$iStepEnd = 0;
+					$sTimeClass = '';
+					$sTimeInfo = '';
+				}
 
-			case 'idle':
-				$sStepEnd = '<span class="approval-theoreticallimit" title="'.Dict::Format('Approval:Tab:StepEnd-Theoretical', round($aStepData['timeout_sec'] / 60)).'">'.date('H:i', $iLastEnd + $aStepData['timeout_sec']).'</span>';
-				$iLastEnd = $iLastEnd + $aStepData['timeout_sec'];
-				break;
-			}
-
-			$sHtml .= "<td></td>\n";
-			$sHtml .= "<td>$sStepEnd</td>\n";
-		}
-		$sHtml .= "<td></td>\n";
-		$sHtml .= "</tr>\n";
-
-		// 2nd row: show the process steps
-		// start => step => ... => step => end
-		//
-		$sHtml .= "<tr style=\"vertical-align:middle;\">\n";
-		$sHtml .= "<td>\n";
-		$sHtml .= "<div class=\"approval-step-start\">".Dict::S('Approval:Tab:Start')."</div>\n";
-		$sHtml .= "</td>\n";
-
-		$sHtml .= "<td>\n";
-		$sHtml .= "<div>$sArrow</div>\n";
-		$sHtml .= "</td>\n";
-
-		foreach($this->GetSteps() as $iStep => $aStepData)
-		{
-			switch ($aStepData['status'])
-			{
-			case 'ongoing':
 				$sStepSumary = Dict::S('Approval:Tab:StepSumary-Ongoing');
 				$sDivClass = "approval-step-ongoing";
 				$sArrowDivClass = "approval-idle";
 				break;
 
-			case 'done':
-				if ($aStepData['approved'])
-				{
-					$sStepSumary = Dict::S('Approval:Tab:StepSumary-OK');
-					$sDivClass = "approval-step-done-ok";
-				}
-				else
-				{
-					$sStepSumary = Dict::S('Approval:Tab:StepSumary-KO');
-					$sDivClass = "approval-step-done-ko";
-				}
-				$sArrowDivClass = "";
-				break;
-
-			case 'timedout':
-				if ($aStepData['timeout_approve'])
-				{
-					$sStepSumary = Dict::S('Approval:Tab:StepSumary-OK-Timeout');
-					$sDivClass = "approval-step-done-ok";
-				}
-				else
-				{
-					$sStepSumary = Dict::S('Approval:Tab:StepSumary-KO-Timeout');
-					$sDivClass = "approval-step-done-ko";
-				}
-				$sArrowDivClass = "";
-				break;
-
-			default:
 			case 'idle':
+			default:
+				if ($iLastEnd && $aStepData['timeout_sec'] > 0)
+				{
+					$iStepEnd = $iLastEnd + $aStepData['timeout_sec'];
+					$sTimeClass = 'approval-theoreticallimit';
+					$sTimeInfo = Dict::Format('Approval:Tab:StepEnd-Theoretical', round($aStepData['timeout_sec'] / 60));
+				}
+				else
+				{
+					// The limit cannot be determined
+					$iStepEnd = 0;
+					$sTimeClass = '';
+					$sTimeInfo = '';
+				}
+
 				if ($this->Get('status') == 'ongoing')
 				{
 					$sStepSumary = Dict::S('Approval:Tab:StepSumary-Idle');
@@ -371,6 +377,8 @@ EOF
 				}
 				break;
 			}
+			$iLastEnd = $iStepEnd;
+
 
 			$sStepHtml = '<div>'.$sStepSumary.'<div>';
 			$sStepHtml .= '<table>';
@@ -389,7 +397,7 @@ EOF
 				if (array_key_exists('approval', $aApproverData))
 				{
 					$bApproved = $aApproverData['approval'];
-					$sAnswerDate = date('H:i', $aApproverData['answer_time']);
+					$sAnswerDate = $this->GetDisplayTime($aApproverData['answer_time']);
 					
 					if ($bApproved)
 					{
@@ -411,13 +419,42 @@ EOF
 			}
 			$sStepHtml .= '</table>';
 			$sStepHtml .= '</div>';
-			$sHtml .= "<td>\n";
-			$sHtml .= "<div class=\"$sDivClass\">$sStepHtml</div>\n";
-			$sHtml .= "</td>\n";
 
-			$sHtml .= "<td>\n";
-			$sHtml .= "<div class=\"$sArrowDivClass\">$sArrow</div>\n";
-			$sHtml .= "</td>\n";
+			$aDisplayData[] = array(
+				'date_html' => null,
+				'time_html' => null,
+				'content_html' => "<div class=\"$sDivClass\">$sStepHtml</div>\n",
+			);
+
+			if ($iStepEnd)
+			{
+				// Display the date iif it has changed
+				//
+				if ($this->GetDisplayDay($iStepEnd) != $sCurrDay)
+				{
+					$sStepEndDate = $this->GetDisplayDay($iStepEnd);
+					$sCurrDay = $sStepEndDate;
+				}
+				else
+				{
+					// Same day
+					$sStepEndDate = '';
+				}
+	
+				$aDisplayData[] = array(
+					'date_html' => $sStepEndDate,
+					'time_html' => '<span class="'.$sTimeClass.'" title="'.$sTimeInfo.'">'.$this->GetDisplayTime($iStepEnd).'</span>',
+					'content_html' => "<div class=\"$sArrowDivClass\">$sArrow</div>\n",
+				);
+			}
+			else
+			{
+				$aDisplayData[] = array(
+					'date_html' => '',
+					'time_html' => '',
+					'content_html' => "<div class=\"$sArrowDivClass\">$sArrow</div>\n",
+				);
+			}
 		}
 
 		switch ($this->Get('status'))
@@ -435,11 +472,64 @@ EOF
 			$sDivClass = "approval-step-done-ko";
 			break;
 		}
-		$sHtml .= "<td>\n";
-		$sHtml .= "<div class=\"$sDivClass\">".Dict::S('Approval:Tab:End').": $sFinalStatus</div>\n";
-		$sHtml .= "</td>\n";
+		$aDisplayData[] = array(
+			'date_html' => null,
+			'time_html' => null,
+			'content_html' => "<div class=\"$sDivClass\">".Dict::S('Approval:Tab:End').": $sFinalStatus</div>\n",
+		);
+
+		// Diplay the information
+		//
+		$sHtml = '';
+		$sHtml .= "<table>\n";
+		$sHtml .= "<tr>\n";
+		foreach($aDisplayData as $aDisplayEvent)
+		{
+			if (!is_null($aDisplayEvent['date_html']))
+			{
+				if (strlen($aDisplayEvent['date_html']) > 0)
+				{
+					$sHtml .= "<td colspan=\"2\">".$aDisplayEvent['date_html']."</td>\n";
+				}
+				else
+				{
+					$sHtml .= "<td>&nbsp;</td>\n";
+				}
+			}
+		}		
+		$sHtml .= "</tr>\n";
+		$sHtml .= "<tr>\n";
+		foreach($aDisplayData as $aDisplayEvent)
+		{
+			if (!is_null($aDisplayEvent['time_html']))
+			{
+				if (strlen($aDisplayEvent['time_html']) > 0)
+				{
+					$sHtml .= "<td colspan=\"2\">".$aDisplayEvent['time_html']."</td>\n";
+				}
+				else
+				{
+					$sHtml .= "<td>&nbsp;</td>\n";
+				}
+			}
+		}		
+		$sHtml .= "</tr>\n";
+		$sHtml .= "<tr style=\"vertical-align:middle;\">\n";
+		foreach($aDisplayData as $aDisplayEvent)
+		{
+			if ($aDisplayEvent['content_html'])
+			{
+				$sHtml .= "<td>".$aDisplayEvent['content_html']."</td>\n";
+			}
+		}		
 		$sHtml .= "</tr>\n";
 		$sHtml .= "</table>\n";
+
+		$sLastError = $this->Get('last_error');
+		if (strlen($sLastError) > 0)
+		{
+			$sHtml .= '<p>'.Dict::Format('Approval:Tab:Error', $sLastError).'</p>';
+		}
 
 		return $sHtml;
 	}
@@ -487,7 +577,10 @@ EOF
 					$this->SendApprovalInvitation($oApprover, $oObject, $aApproverData['passcode']);
 				}
 			}
-			$this->Set('timeout', time() + $aStepData['timeout_sec']);
+			if ($aStepData['timeout_sec'] > 0)
+			{
+				$this->Set('timeout', time() + $aStepData['timeout_sec']);
+			}
 			$this->SetSteps($aSteps);
 			$this->DBUpdate();
 		}
@@ -645,63 +738,38 @@ EOF
 	{
 		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
 
-		$sTitle = MetaModel::ApplyParams($this->GetTitle(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
-		$sIntroduction = MetaModel::ApplyParams($this->GetIntroduction(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
+		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
+		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
 		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
 
-		// Note: cloned from module 'Notify me !'
-		$sSender = 'test@combodo.com';
-		$aList = MetaModel::FlattenZlist(MetaModel::GetZListItems(get_class($oObj), 'details'));
+		$sReplyOk = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=approve';
+		$sReplyKo = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=reject';
+		$sMoreInfo = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=';
+
 		$sBody = '<html>';
 		$sBody .= '<body>';
 		$sBody .= '<h3>'.$sTitle.'</h3>';
 		$sBody .= '<p>'.$sIntroduction.'</p>';
-		$sReplyOk = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=approve';
-		$sReplyKo = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=reject';
-		$sMoreInfo = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=';
 		$sBody .= '<p>';
-		$sBody .= '<a href="'.$sReplyOk.'">'.Dict::S('Approval:Form:Btn-Approve').'</a>&nbsp;&nbsp;&nbsp;';
-		$sBody .= '<a href="'.$sReplyKo.'">'.Dict::S('Approval:Form:Btn-Reject').'</a>&nbsp;&nbsp;&nbsp;';
-		$sBody .= '<a href="'.$sMoreInfo.'">'.Dict::S('Approval:Form:ViewMoreInfo').'</a>';
+		$sBody .= '<a href="'.$sReplyOk.'">'.Dict::S('Approval:Action-Approve').'</a>';
+		$sBody .= '&nbsp;&nbsp;&nbsp;';
+		$sBody .= '<a href="'.$sReplyKo.'">'.Dict::S('Approval:Action-Reject').'</a>';
+		if ($this->IsAllowedToSeeObjectDetails($oToPerson, $oObj))
+		{
+			$sBody .= '&nbsp;&nbsp;&nbsp;';
+			$sBody .= '<a href="'.$sMoreInfo.'">'.Dict::S('Approval:Action-ViewMoreInfo').'</a>';
+		}
 		$sBody .= '</p>';
 
-/*
-		$sBody .= '<h4>'.MetaModel::GetName(get_class($oObj)).": ".$oObj->GetHyperlink().'</h4>';
-		$sBody .= '<table>';
-		foreach($aList as $sAttCode)
-		{
-			if (($oObj->GetAttributeFlags($sAttCode) & OPT_ATT_HIDDEN) == 0)
-			{
-				$oAttDef = MetaModel::GetAttributeDef(get_class($oObj), $sAttCode);
-				if ($oAttDef->IsScalar())
-				{
-					$sBody .= '<tr style="font-size:smaller;"><td>'.$oAttDef->GetLabel().'</td><td>'.$oObj->GetAsHTML($sAttCode).'</td></tr>'."\n";
-				}
-			}
-		}
-		$sBody .= '</table>';
-*/
 		$sBody .= '</body>';
 		$sBody .= '</html>';
 
-		// Find out which attribute is the email attribute
-		//
-		$sEmailAttCode = 'email';
-		foreach(MetaModel::ListAttributeDefs(get_class($this)) as $sAttCode => $oAttDef)
-		{
-			if ($oAttDef instanceof AttributeEmailAddress)
-			{
-				$sEmailAttCode = $sAttCode;
-			}
-		}
-		$sTo = $oToPerson->Get($sEmailAttCode);
-		
 		$oEmail = new EMail();
 		$oEmail->SetSubject($sTitle);
 		$oEmail->SetBody($sBody);
-		$oEmail->SetRecipientTO($sTo);
-		$oEmail->SetRecipientFrom($sSender);
-		$oEmail->SetRecipientReplyTo($sSender);
+		$oEmail->SetRecipientTO($this->GetApproverEmailAddress($oToPerson));
+		$oEmail->SetRecipientFrom($this->GetEmailSender($oToPerson, $oObj));
+		$oEmail->SetRecipientReplyTo($this->GetEmailReplyTo($oToPerson, $oObj));
 		$iRes = $oEmail->Send($aIssues);
 		switch ($iRes)
 		{
@@ -712,6 +780,8 @@ EOF
 				break;
 
 			case EMAIL_SEND_ERROR:
+				$sErrors = implode(', ', $aIssues);
+				$this->Set('last_error', Dict::Format('Approval:Error:Email', $sErrors));
 				break;
 		}
 	}
@@ -723,19 +793,17 @@ EOF
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
 	
-		$sTitle = MetaModel::ApplyParams($this->GetTitle(get_class($oApprover), $oApprover->GetKey()), $aParams);
-		$sBody = MetaModel::ApplyParams($this->GetIntroduction(get_class($oApprover), $oApprover->GetKey()), $aParams);
+		$sBody = MetaModel::ApplyParams($this->GetFormBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
 	
 		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
-		$oPage->add("<h1>".$sTitle."</h1>\n");
-		$oPage->add("<p>".$sBody."</p>\n");
+		$oPage->add("<div id=\"form_approval_introduction\">".$sBody."</div>\n");
 		$oPage->add("<form action=\"\" id=\"form_approve\" method=\"post\">\n");
 		$oPage->add("<input type=\"hidden\" id=\"my_operation\" name=\"operation\" value=\"_not_set_\">");
 		$oPage->add("<input type=\"hidden\" name=\"token\" value=\"$sToken\">");
 	//	$oP->add("<input type=\"hidden\" name=\"transaction_id\" value=\"".utils::GetNewTransactionId()."\">\n");
 	
-		$oPage->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('approve');\" value=\"".Dict::S('Approval:Form:Btn-Approve')."\">");
-		$oPage->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('reject');\" value=\"".Dict::S('Approval:Form:Btn-Reject')."\">");
+		$oPage->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('approve');\" value=\"".Dict::S('Approval:Action-Approve')."\">");
+		$oPage->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('reject');\" value=\"".Dict::S('Approval:Action-Reject')."\">");
 	
 		$oPage->add("</form>");
 		$oPage->add("</div>");
@@ -751,7 +819,84 @@ EOF
 
 		// Object details
 		//
-		$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
+		if ($this->IsAllowedToSeeObjectDetails($oApprover, $oObject))
+		{
+			$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
+		}
+	}
+
+	/**
+	 * Overridable to change the display of days	
+	 */	
+	public function GetDisplayDay($iTime)
+	{
+		return date('Y-m-d', $iTime);
+	}
+
+	/**
+	 * Overridable to change the display of time	
+	 */	
+	public function GetDisplayTime($iTime)
+	{
+		return date('H:i', $iTime);
+	}
+
+	/**
+	 * Overridable to determine the approver email address in a different way	
+	 */	
+	public function GetApproverEmailAddress($oApprover)
+	{
+		// Find out which attribute is the email attribute
+		//
+		$sEmailAttCode = 'email';
+		foreach(MetaModel::ListAttributeDefs(get_class($oApprover)) as $sAttCode => $oAttDef)
+		{
+			if ($oAttDef instanceof AttributeEmailAddress)
+			{
+				$sEmailAttCode = $sAttCode;
+			}
+		}
+		$sAddress = $oApprover->Get($sEmailAttCode);
+		return $sAddress;
+	}
+
+	/**
+	 * Overridable to specify the email sender in a more dynamic way
+	 */	
+	public function GetEmailSender($oApprover, $oObject)
+	{
+		return MetaModel::GetModuleSetting('approval-base', 'email_sender');
+	}
+
+	/**
+	 * Overridable to specify the email reply-to in a more dynamic way
+	 */	
+	public function GetEmailReplyTo($oApprover, $oObject)
+	{
+		return MetaModel::GetModuleSetting('approval-base', 'email_reply_to');
+	}
+
+	/**
+	 * Overridable to disable the link to view more information on the object
+	 */	
+	public function IsAllowedToSeeObjectDetails($oApprover, $oObject)
+	{
+		if (get_class($oApprover) != 'Person')
+		{
+			return false;
+		}
+
+		$oSearch = DBObjectSearch::FromOQL_AllData("SELECT User WHERE contactid = :approver_id");
+		$oSet = new DBObjectSet($oSearch, array(), array('approver_id' => $oApprover->GetKey()));
+		if ($oSet->Count() > 0)
+		{
+			// The approver has a login: show the link!
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 }
 
