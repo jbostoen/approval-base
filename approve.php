@@ -43,6 +43,10 @@ function ReadMandatoryParam($sParam)
 }
 
 
+/**
+ * Interpret the token to build the page arguments
+ * Validate that the arguments are consistent altogether
+ */
 function GetContext($oP, $sToken)
 {
 	// For the moment, the token is made of <scheme_id>-<step>-<contact_class>-<contact_id>

@@ -816,11 +816,15 @@ function SetStimulusToApply(sOperation)
 }
 EOF
 );
-
 		// Object details
 		//
 		if ($this->IsAllowedToSeeObjectDetails($oApprover, $oObject))
 		{
+			if ($this->IsLoginMandatoryToSeeObjectDetails($oApprover, $oObject))
+			{
+				require_once(APPROOT.'/application/loginwebpage.class.inc.php');
+				LoginWebPage::DoLogin(); // Check user rights and prompt if needed
+			}
 			$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
 		}
 	}
@@ -897,6 +901,14 @@ EOF
 		{
 			return false;
 		}
+	}
+
+	/**
+	 * Overridable to force the login when viewing object details
+	 */	
+	public function IsLoginMandatoryToSeeObjectDetails($oApprover, $oObject)
+	{
+		return false;
 	}
 }
 
