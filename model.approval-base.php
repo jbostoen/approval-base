@@ -414,7 +414,7 @@ EOF
 				}
 				$sStepHtml .= '<tr>';
 				$sStepHtml .= '<td>'.$sApprover.'</td>';
-				$sStepHtml .= '<td>'.$sAnswer.'</td>';
+				$sStepHtml .= '<td>&nbsp;'.$sAnswer.'</td>';
 				$sStepHtml .= '</tr>';
 			}
 			$sStepHtml .= '</table>';
