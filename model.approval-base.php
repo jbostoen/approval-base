@@ -274,8 +274,8 @@ EOF
 		$aDisplayData = array();
 
 		$aDisplayData[] = array(
-			'date_html' => '',
-			'time_html' => '',
+			'date_html' => null,
+			'time_html' => null,
 			'content_html' => "<div class=\"approval-step-start\">".Dict::S('Approval:Tab:Start')."</div>\n",
 		);
 
@@ -349,15 +349,25 @@ EOF
 
 			case 'idle':
 			default:
-				if ($iLastEnd && $aStepData['timeout_sec'] > 0)
-				{
-					$iStepEnd = $iLastEnd + $aStepData['timeout_sec'];
-					$sTimeClass = 'approval-theoreticallimit';
-					$sTimeInfo = Dict::Format('Approval:Tab:StepEnd-Theoretical', round($aStepData['timeout_sec'] / 60));
+				if ($this->Get('status') == 'ongoing')
+				{			
+					if ($iLastEnd && $aStepData['timeout_sec'] > 0)
+					{
+						$iStepEnd = $iLastEnd + $aStepData['timeout_sec'];
+						$sTimeClass = 'approval-theoreticallimit';
+						$sTimeInfo = Dict::Format('Approval:Tab:StepEnd-Theoretical', round($aStepData['timeout_sec'] / 60));
+					}
+					else
+					{
+						// The limit cannot be determined
+						$iStepEnd = 0;
+						$sTimeClass = '';
+						$sTimeInfo = '';
+					}
 				}
 				else
 				{
-					// The limit cannot be determined
+					// The process has been terminated before this step
 					$iStepEnd = 0;
 					$sTimeClass = '';
 					$sTimeInfo = '';
@@ -438,11 +448,11 @@ EOF
 				else
 				{
 					// Same day
-					$sStepEndDate = '';
+					$sStepEndDate = '&nbsp;';
 				}
 	
 				$aDisplayData[] = array(
-					'date_html' => $sStepEndDate,
+					'date_html' => '<span class="'.$sTimeClass.'" title="'.$sTimeInfo.'">'.$sStepEndDate.'</span>',
 					'time_html' => '<span class="'.$sTimeClass.'" title="'.$sTimeInfo.'">'.$this->GetDisplayTime($iStepEnd).'</span>',
 					'content_html' => "<div class=\"$sArrowDivClass\">$sArrow</div>\n",
 				);
@@ -483,6 +493,7 @@ EOF
 		$sHtml = '';
 		$sHtml .= "<table>\n";
 		$sHtml .= "<tr>\n";
+		$sHtml .= "<td colspan=\"2\"></td>\n";
 		foreach($aDisplayData as $aDisplayEvent)
 		{
 			if (!is_null($aDisplayEvent['date_html']))
@@ -493,12 +504,13 @@ EOF
 				}
 				else
 				{
-					$sHtml .= "<td>&nbsp;</td>\n";
+					$sHtml .= "<td colspan=\"2\">&nbsp;</td>\n";
 				}
 			}
 		}		
 		$sHtml .= "</tr>\n";
 		$sHtml .= "<tr>\n";
+		$sHtml .= "<td colspan=\"2\"></td>\n";
 		foreach($aDisplayData as $aDisplayEvent)
 		{
 			if (!is_null($aDisplayEvent['time_html']))
@@ -515,6 +527,7 @@ EOF
 		}		
 		$sHtml .= "</tr>\n";
 		$sHtml .= "<tr style=\"vertical-align:middle;\">\n";
+		$sHtml .= "<td></td>\n";
 		foreach($aDisplayData as $aDisplayEvent)
 		{
 			if ($aDisplayEvent['content_html'])

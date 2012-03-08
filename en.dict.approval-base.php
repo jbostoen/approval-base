@@ -32,8 +32,8 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Tab:StepSumary-Ongoing' => 'Waiting for the replies',
 	'Approval:Tab:StepSumary-OK' => 'Approved',
 	'Approval:Tab:StepSumary-KO' => 'Rejected',
-	'Approval:Tab:StepSumary-OK-Timeout' => 'Approved implicitely (run out of time)',
-	'Approval:Tab:StepSumary-KO-Timeout' => 'Rejected implicitely (run out of time)',
+	'Approval:Tab:StepSumary-OK-Timeout' => 'Approved (timeout)',
+	'Approval:Tab:StepSumary-KO-Timeout' => 'Rejected (timeout)',
 	'Approval:Tab:StepSumary-Idle' => 'Not started',
 	'Approval:Tab:StepSumary-Skipped' => 'Skipped',
 
