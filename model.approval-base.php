@@ -950,7 +950,8 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 
 		$oApprovSearch = DBObjectSearch::FromOQL('SELECT ApprovalScheme WHERE obj_class = :obj_class AND obj_key = :obj_key');
 		$oApprovSearch->AllowAllData();
-		$oApprovals = new DBObjectSet($oApprovSearch, array(), array('obj_class' => $sClass, 'obj_key' => $oObject->GetKey()));
+		// Get the ongoing approvals, most recent first
+		$oApprovals = new DBObjectSet($oApprovSearch, array('started' => false), array('obj_class' => $sClass, 'obj_key' => $oObject->GetKey()));
 		if($oScheme = $oApprovals->Fetch())
 		{
 			$oScheme->DisplayStatus($oPage);
