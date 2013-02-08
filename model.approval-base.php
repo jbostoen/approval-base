@@ -145,6 +145,17 @@ abstract class ApprovalScheme extends DBObject
 	 */	 	
 	abstract public function DoReject(&$oObject);
 
+	/**
+	 * Optionaly override this verb to change the way working hours will be computed
+	 * Appeared in Version 1.1 of the module 	 
+	 * 	 
+	 * @return string Name of a class implementing the interface iWorkingTimeComputer
+	 */	 	
+	protected function GetWorkingTimeComputer()
+	{
+		// This class is provided as the default way to compute the active time, aka 24x7, 24 hours a day!
+		return 'DefaultWorkingTimeComputer';
+	}
 
 	/**
 	 * Helper to decode the approval sequences (steps)
@@ -170,7 +181,7 @@ abstract class ApprovalScheme extends DBObject
 	{
 		$this->Set('steps', serialize($aSteps));
 	}
-	 	
+
 	/**
 	 * Official mean to declare a new step at the end of the existing sequence
 	 * 	 
@@ -188,11 +199,34 @@ abstract class ApprovalScheme extends DBObject
 			{
 				throw new Exception("Approval plugin: Wrong class ".$aApproverData['class']." for the approver");
 			}
-			$aApprovers[] = array(
+			$aApproverStatus = array(
 				'class' => $aApproverData['class'],
 				'id' => $aApproverData['id'],
 				'passcode' => mt_rand(11111,99999),
 			);
+			if (array_key_exists('forward', $aApproverData))
+			{
+				$aApproverStatus['forward'] = array();
+				foreach($aApproverData['forward'] as $aSubstituteData)
+				{
+					if (!MetaModel::IsValidClass($aSubstituteData['class']))
+					{
+						throw new Exception("Approval plugin: Wrong class ".$aApproverData['class']." for the approver");
+					}
+					$aSubstituteStatus = array(
+						'class' => $aSubstituteData['class'],
+						'id' => $aSubstituteData['id'],
+						'passcode' => mt_rand(11111,99999),
+						'timeout_percent' => $aSubstituteData['timeout_percent'],
+					);
+					if (array_key_exists('role', $aSubstituteData))
+					{
+						$aSubstituteStatus['role'] = $aSubstituteData['role'];
+					}
+					$aApproverStatus['forward'][] = $aSubstituteStatus;
+				}
+			}
+			$aApprovers[] = $aApproverStatus;
 		}
 
 		$aNewStep = array(
@@ -225,32 +259,38 @@ abstract class ApprovalScheme extends DBObject
 		$sImgApproved = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.png';
 		$sImgRejected = utils::GetAbsoluteUrlModulesRoot().'approval-base/reject.png';
 		$sImgArrow = utils::GetAbsoluteUrlModulesRoot().'approval-base/arrow-next.png';
+		$sImgBubbleTriangle = utils::GetAbsoluteUrlModulesRoot().'approval-base/bubble-triangle.png';
 
 		$oPage->add_style(
 <<<EOF
 .approval-step-idle {
+	background-color: #F6F6F1;
 	opacity: 0.4;
 	border-style: dashed;
 	border-width: 1px;
 	padding:10px;	
 }
 .approval-step-start {
+	background-color: #F6F6F1;
 	border-style: solid;
 	border-width: 1px;
 	padding:10px;	
 }
 .approval-step-ongoing {
+	background-color: #F6F6F1;
 	border-style: double;
 	border-width: 5px;
 	padding:10px;	
 }
 .approval-step-done-ok {
+	background-color: #F6F6F1;
 	border-style: solid;
 	border-width: 2px;
 	padding:10px;	
 	border-color: #69BB69;
 }
 .approval-step-done-ko {
+	background-color: #F6F6F1;
 	border-style: solid;
 	border-width: 2px;
 	padding:10px;
@@ -264,6 +304,39 @@ abstract class ApprovalScheme extends DBObject
 }
 .approval-theoreticallimit {
 	opacity: 0.4;
+}
+.approval-step-header {
+	margin: 5px;
+	font-weight: bolder;
+}
+div.approver-label {
+	padding: 10px;
+	padding-left: 16px;
+	margin: 5px;
+	margin-right: 0;
+	background-color: #A5CAFF;
+	-moz-border-radius: 6px;
+	-webkit-border-radius: 6px;
+	border-radius: 6px;
+}
+div.approver-answer {
+	padding: 10px;
+	padding-left: 0px;
+	padding-top: 13px;
+}
+div.approver-with-substitutes {
+	background: url(../images/minus.gif) no-repeat left;
+	cursor: pointer;	
+	padding-left: 15px;
+}
+div.approver-with-substitutes-closed {
+	background: url(../images/plus.gif) no-repeat left;
+}
+tr.approval-substitutes td div{
+	padding-left: 15px;
+}
+.approval-substitutes.closed {
+	display: none;
 }
 
 EOF
@@ -330,7 +403,7 @@ EOF
 			case 'ongoing':
 				if ($iLastEnd && $aStepData['timeout_sec'] > 0)
 				{
-					$iStepEnd = $iLastEnd + $aStepData['timeout_sec'];
+					$iStepEnd = $this->ComputeDeadline($iLastEnd, $aStepData['timeout_sec']);
 					$sTimeClass = 'approval-timelimit';
 					$sTimeInfo = Dict::S('Approval:Tab:StepEnd-Limit');
 				}
@@ -353,7 +426,7 @@ EOF
 				{			
 					if ($iLastEnd && $aStepData['timeout_sec'] > 0)
 					{
-						$iStepEnd = $iLastEnd + $aStepData['timeout_sec'];
+						$iStepEnd = $this->ComputeDeadline($iLastEnd, $aStepData['timeout_sec']);
 						$sTimeClass = 'approval-theoreticallimit';
 						$sTimeInfo = Dict::Format('Approval:Tab:StepEnd-Theoretical', round($aStepData['timeout_sec'] / 60));
 					}
@@ -389,9 +462,8 @@ EOF
 			}
 			$iLastEnd = $iStepEnd;
 
-
-			$sStepHtml = '<div>'.$sStepSumary.'<div>';
-			$sStepHtml .= '<table>';
+			$sStepHtml = '<div class="approval-step-header">'.$sStepSumary.'</div>';
+			$sStepHtml .= '<table style="border-collapse: collapse;">';
 			foreach($aStepData['approvers'] as $aApproverData)
 			{
 				$oApprover = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
@@ -411,24 +483,103 @@ EOF
 					
 					if ($bApproved)
 					{
-						$sAnswer = "<img src=\"$sImgApproved\" style=\"vertical-align:middle;\" title=\"$sAnswerDate\">";
+						$sAnswer = "<img src=\"$sImgApproved\" title=\"$sAnswerDate\">";
 					}
 					else
 					{
-						$sAnswer = "<img src=\"$sImgRejected\" style=\"vertical-align:middle;\" title=\"$sAnswerDate\">";
+						$sAnswer = "<img src=\"$sImgRejected\" title=\"$sAnswerDate\">";
 					}
 				}
 				else
 				{
-					$sAnswer = "<img src=\"$sImgOngoing\" style=\"vertical-align:middle;\">";
+					$sAnswer = "<img src=\"$sImgOngoing\">";
+				}
+				if (array_key_exists('forward', $aApproverData))
+				{
+					$bShowClosed = true;
+					$sId = "substitutes_".$aApproverData['passcode'];
+
+					if (array_key_exists('replier_index', $aApproverData))
+					{
+						$sApproverAnswer = "<img src=\"$sImgOngoing\">";
+					}
+					else
+					{
+						// The answer is the one of 
+						$sApproverAnswer = $sAnswer;
+					}
+
+					$sApprover = "<div class=\"approver-with-substitutes\" id=\"{$sId}\">".$sApprover.'</div>';
+					$sSubstitutes = "<table id=\"content_$sId\">";
+					$sSubstitutes .= '<tr>';
+					$sSubstitutes .= '<td>'.$sApprover.'</td>';
+					$sSubstitutes .= '<td class="approval-substitutes">'.$sApproverAnswer.'</td>';
+					$sSubstitutes .= '</tr>';
+
+					foreach ($aApproverData['forward'] as $iReplierIndex => $aForwardData)
+					{
+						$oSubstitute = MetaModel::GetObject($aForwardData['class'], $aForwardData['id'], false);
+						if ($oSubstitute)
+						{
+							//$sSubstitute = $oSubstitute->GetHyperLink();
+							$sSubstitute = $oSubstitute->GetName();
+						}
+						else
+						{
+							$sSubstitute = $aForwardData['class'].'::'.$aForwardData['id'];
+						}
+						$sRole = isset($aForwardData['role']) ? ' ('.$aForwardData['role'].')' : '';
+
+						if (array_key_exists('replier_index', $aApproverData) && ($iReplierIndex == $aApproverData['replier_index']))
+						{
+							// The result is known and this replier is the one who did answer
+							$sSubstituteAnswer = $sAnswer;
+							$sSubstituteClass = "";
+							$bShowClosed = false;
+						}
+						elseif(array_key_exists('sent_time', $aForwardData))
+						{
+							$sSubstituteAnswer = "<img src=\"$sImgOngoing\">";
+							$sSubstituteClass = "";
+							$bShowClosed = false;
+						}
+						else
+						{
+							$sSubstituteAnswer = '';
+							$sSubstituteClass = "approval-idle";
+						}
+						$sSubstitutes .= '<tr class="approval-substitutes">';
+						//$sSubstitutes .= '<td>'.$aForwardData['timeout_percent'].'%: '.$sSubstitute.$sRole.'</td>';
+						$sSubstitutes .= "<td><div class=\"$sSubstituteClass\">".$sSubstitute.$sRole.'</div></td>';
+						$sSubstitutes .= '<td>'.$sSubstituteAnswer.'</td>';
+						$sSubstitutes .= '</tr>';
+					}		
+					$sSubstitutes .= '</table>';
+
+					$sApprover = $sSubstitutes;
+					$oPage->add_ready_script("$('#{$sId}').click( function() { $('#content_{$sId} .approval-substitutes').toggleClass('closed'); } );\n");
+					$oPage->add_ready_script("$('#{$sId}').click( function() { $(this).toggleClass('approver-with-substitutes-closed'); } );\n");
+					if ($bShowClosed)
+					{
+						// Close it for the first display
+						$oPage->add_ready_script("$('#content_{$sId} .approval-substitutes').toggleClass('closed');");
+						$oPage->add_ready_script("$('#{$sId}').toggleClass('approver-with-substitutes-closed');");
+					}
 				}
 				$sStepHtml .= '<tr>';
-				$sStepHtml .= '<td>'.$sApprover.'</td>';
-				$sStepHtml .= '<td>&nbsp;'.$sAnswer.'</td>';
+				$sStepHtml .= '<td style="vertical-align: top;"><div class="approver-label">'.$sApprover.'</div></td>';
+				if (strlen($sAnswer) > 0)
+				{
+					$sTriangle = "<img src=\"$sImgBubbleTriangle\">";
+					$sStepHtml .= '<td style="vertical-align: top;"><div class="approver-answer">'.$sTriangle.$sAnswer.'</div></td>';
+				}
+				else
+				{
+					$sStepHtml .= '<td>&nbsp;</td>';
+				}
 				$sStepHtml .= '</tr>';
 			}
 			$sStepHtml .= '</table>';
-			$sStepHtml .= '</div>';
 
 			$aDisplayData[] = array(
 				'date_html' => null,
@@ -470,22 +621,22 @@ EOF
 		switch ($this->Get('status'))
 		{
 		case 'ongoing':
-			$sFinalStatus = "<img src=\"$sImgOngoing\" style=\"vertical-align:middle;\">";
+			$sFinalStatus = "<img style=\"display: inline-block; vertical-align:middle;\" src=\"$sImgOngoing\">";
 			$sDivClass = "approval-step-idle";
 			break;
 		case 'accepted':
-			$sFinalStatus = "<img src=\"$sImgApproved\" style=\"vertical-align:middle;\">";
+			$sFinalStatus = "<img style=\"display: inline-block; vertical-align:middle;\" src=\"$sImgApproved\">";
 			$sDivClass = "approval-step-done-ok";
 			break;
 		case 'rejected':
-			$sFinalStatus = "<img src=\"$sImgRejected\" style=\"vertical-align:middle;\">";
+			$sFinalStatus = "<img style=\"display: inline-block; vertical-align:middle;\" src=\"$sImgRejected\">";
 			$sDivClass = "approval-step-done-ko";
 			break;
 		}
 		$aDisplayData[] = array(
 			'date_html' => null,
 			'time_html' => null,
-			'content_html' => "<div class=\"$sDivClass\">".Dict::S('Approval:Tab:End').": $sFinalStatus</div>\n",
+			'content_html' => "<div class=\"$sDivClass\"><div style=\"display: inline-block; vertical-align: middle;\">".Dict::S('Approval:Tab:End').": </div>&nbsp;$sFinalStatus</div>\n",
 		);
 
 		// Diplay the information
@@ -590,10 +741,7 @@ EOF
 					$this->SendApprovalInvitation($oApprover, $oObject, $aApproverData['passcode']);
 				}
 			}
-			if ($aStepData['timeout_sec'] > 0)
-			{
-				$this->Set('timeout', time() + $aStepData['timeout_sec']);
-			}
+			$this->Set('timeout', $this->ComputeTimeout());
 			$this->SetSteps($aSteps);
 			$this->DBUpdate();
 		}
@@ -634,7 +782,7 @@ EOF
 	 * - record the answer
 	 * Then, start the next step if the current one is over 
 	 */	 
-	public function OnAnswer($iStep, $oApprover, $bApprove)
+	public function OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute = null)
 	{
 		if ($this->Get('status') != 'ongoing')
 		{
@@ -650,11 +798,31 @@ EOF
 		$aStepData = &$aSteps[$iCurrentStep];
 		foreach($aStepData['approvers'] as &$aApproverData)
 		{
-			if (($aApproverData['class'] == get_class($oApprover)) && ($oApprover->GetKey() == $aApproverData['id']))
+			if (($aApproverData['class'] == get_class($oApprover)) && ($aApproverData['id'] == $oApprover->GetKey()))
 			{
-				// Record the approval
-				$aApproverData['answer_time'] = time();
+				// Record the approval result
+				//
 				$aApproverData['approval'] = $bApprove;
+				$aApproverData['answer_time'] = time();
+
+				// The answer may be originated by the approver or a substitute
+				//
+				if (!is_null($oSubstitute) && (array_key_exists('forward', $aApproverData)))
+				{
+					$iReplierIndex = null;
+					foreach ($aApproverData['forward'] as $iIndex => $aSubstituteData)
+					{
+						if (($aSubstituteData['class'] == get_class($oSubstitute)) && ($aSubstituteData['id'] == $oSubstitute->GetKey()))
+						{
+							$iReplierIndex = $iIndex;
+							break;
+						}
+					}
+					if (!is_null($iReplierIndex))
+					{
+						$aApproverData['replier_index'] = $iReplierIndex;
+					}
+				}
 			}
 		}
 		$this->SetSteps($aSteps);
@@ -676,7 +844,97 @@ EOF
 	}
 
 	/**
-	 * A given step is running out of time: terminate it and start the next one
+	 * Helper to compute current state start time - this information is not recorded
+	 */
+	public function ComputeLastStart()
+	{
+		$iStepStarted = AttributeDateTime::GetAsUnixSeconds($this->Get('started'));
+		foreach($this->GetSteps() as $iStep => $aStepData)
+		{
+			switch ($aStepData['status'])
+			{
+			case 'done':
+			case 'timedout':
+				$iStepStarted = max($iStepStarted, $aStepData['ended']);
+				break;
+			}
+		}
+		return $iStepStarted;
+	}
+	 
+	/**
+	 * Helper to compute a target time, depending on the working hours
+	 */
+	protected function ComputeDeadline($iStartTime, $iDurationSec)
+	{
+		static $oComputer = null;
+		if ($oComputer == null)
+		{
+			$sWorkingTimeComputer = $this->GetWorkingTimeComputer();
+			if (!class_exists($sWorkingTimeComputer))
+			{
+				throw new CoreException("The provided working time computer is not a valid class: '$sWorkingTimeComputer'. Please, review the implementation of GetWorkingTimeComputer()");
+			}
+			$oComputer = new $sWorkingTimeComputer();
+		}
+
+		$oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'));
+		$aCallSpec = array($oComputer, 'GetDeadline');
+		if (!is_callable($aCallSpec))
+		{
+			throw new CoreException("Unknown class/verb '$sWorkingTimeComputer/GetDeadline'");
+		}
+		$oStartDate = new DateTime('@'.$iStartTime); // setTimestamp not available in PHP 5.2
+		$oDeadline = call_user_func($aCallSpec, $oObject, $iDurationSec, $oStartDate);
+		$iRet = $oDeadline->format('U');
+		return $iRet;
+	}
+
+	/**
+	 * Compute the next timeout (depends on the step and the eventual forwards)
+	 */
+	public function ComputeTimeout()
+	{
+		$aSteps = $this->GetSteps();
+		$iCurrentStep = $this->Get('current_step');
+		if (!array_key_exists($iCurrentStep, $aSteps))
+		{
+			return null;
+		}
+		$aStepData = $aSteps[$iCurrentStep];
+
+		if ($aStepData['timeout_sec'] == 0)
+		{
+			// No timeout for the current step
+			return null;
+		}
+
+		// Next timeout is the minimum amongst the overall timeout and the forward timeouts
+		//
+		$iStepStarted = $this->ComputeLastStart();
+		$iMinTimeout = $aStepData['timeout_sec'];
+		foreach($aStepData['approvers'] as $aApproverData)
+		{
+			// Skip this approver if the answer has been given (by the approver or any of the forwards)
+			if (array_key_exists('approval', $aApproverData)) continue;
+			// Skip this approver if no forwarding is planned
+			if (!array_key_exists('forward', $aApproverData)) continue;
+
+			foreach ($aApproverData['forward'] as $aForwardData)
+			{
+				// Skip this forward approver if already notified
+				if (array_key_exists('sent_time', $aForwardData)) continue;
+
+				$iMinTimeout = min($iMinTimeout, $aStepData['timeout_sec'] * $aForwardData['timeout_percent'] / 100);
+			}
+		}
+		return $this->ComputeDeadline($iStepStarted, $iMinTimeout);
+	}
+
+	/**
+	 * A timeout can occur in two conditions:
+	 * - The current step is running out of time: terminate it and start the next one
+	 * - An forward has been declared for an approver who has not yet replied	 
 	 */	 
 	public function OnTimeout()
 	{
@@ -697,17 +955,56 @@ EOF
 			return;
 		}
 
-		// We're 100% sure this event is relevant: interrupt the current step!
-		//
-		$aStepData['status'] = 'timedout';
-		$aStepData['ended'] = time();
-		$aStepData['approved'] = $aStepData['timeout_approve'];
-		$this->SetSteps($aSteps);
-		$this->Set('timeout', null);
-		$this->DBUpdate();
+		$iStepStarted = $this->ComputeLastStart();
+		if (time() >= $this->ComputeDeadline($iStepStarted, $aStepData['timeout_sec']))
+		{
+			// Time is over for the current step!
+			//
+			$aStepData['status'] = 'timedout';
+			$aStepData['ended'] = time();
+			$aStepData['approved'] = $aStepData['timeout_approve'];
+			$this->SetSteps($aSteps);
+			$this->Set('timeout', null);
+			$this->DBUpdate();
+	
+			$this->Set('current_step', $iCurrentStep + 1);
+			$this->StartNextStep();
+		}
+		else
+		{
+			// The time is over for some of the forward approvers
+			//
+			$oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'));
+			foreach($aStepData['approvers'] as &$aApproverData)
+			{
+				// Skip this approver if the answer has been given (by the approver or any of the forwards)
+				if (array_key_exists('approval', $aApproverData)) continue;
+				// Skip this approver if no forwarding is planned
+				if (!array_key_exists('forward', $aApproverData)) continue;
 
-		$this->Set('current_step', $iCurrentStep + 1);
-		$this->StartNextStep();
+				foreach ($aApproverData['forward'] as &$aForwardData)
+				{
+					// Skip this forward approver if already notified
+					if (array_key_exists('sent_time', $aForwardData)) continue;
+
+					if (time() >= $this->ComputeDeadline($iStepStarted, $aStepData['timeout_sec'] * $aForwardData['timeout_percent'] / 100))
+					{
+						// Time is over for this approver: forward the notification
+						//
+						$aForwardData['sent_time'] = time();
+						$oApprover = MetaModel::GetObject($aForwardData['class'], $aForwardData['id'], false);
+						if ($oApprover)
+						{
+							$this->SendApprovalInvitation($oApprover, $oObject, $aForwardData['passcode']);
+						}
+					}
+				}
+			}
+			// Record the changes and reset the timer to the next timeout
+			$this->SetSteps($aSteps);
+			$this->Set('timeout', $this->ComputeTimeout());
+			$this->DBUpdate();
+		}
 	}
 
 	/**
@@ -745,7 +1042,7 @@ EOF
 	}
 
 	/**
-	 * Build and send the message for a given approver
+	 * Build and send the message for a given approver (can be a forwarded approval request)
 	 */	 	
 	public function SendApprovalInvitation($oToPerson, $oObj, $sPassCode)
 	{
@@ -802,7 +1099,7 @@ EOF
 	/**
 	 * Build and output the approval form for a given user
 	 **/	
-	public function DisplayApprovalForm($oPage, $oApprover, $oObject, $sToken)
+	public function DisplayApprovalForm($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
 	
@@ -1030,7 +1327,11 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 		{
 			$oOrphans = DBObjectSearch::FromOQL("SELECT ApprovalScheme WHERE obj_class = '".get_class($oObject)."' AND obj_key = ".$oObject->GetKey());
 			$oOrphans->AllowAllData();
-			MetaModel::BulkDelete($oOrphans);
+			$oSet = new DBObjectSet($oOrphans);
+			while ($oScheme = $oSet->Fetch())
+			{
+				$oScheme->DBDelete();
+			}
 		}
 	}
 

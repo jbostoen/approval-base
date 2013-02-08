@@ -51,6 +51,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Form:ApproverDeleted' => 'Sorry, the record corresponding to your identity has been deleted.',
 	'Approval:Form:ObjectDeleted' => 'Sorry, the object of the approval has been deleted.',
 
+	'Approval:Form:AnswerGivenBy' => 'Sorry, the reply has already been given by \'%1$s\'', 
 	'Approval:Form:AlreadyApproved' => 'Sorry, the process has already been completed with result: Approved.',
 	'Approval:Form:AlreadyRejected' => 'Sorry, the process has already been completed with result: Rejected.',
 

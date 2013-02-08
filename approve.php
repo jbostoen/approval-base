@@ -49,7 +49,7 @@ function ReadMandatoryParam($sParam)
  */
 function GetContext($oP, $sToken)
 {
-	// For the moment, the token is made of <scheme_id>-<step>-<contact_class>-<contact_id>
+	// For the moment, the token is made of <scheme_id>-<step>-<contact_class>-<contact_id>-<passcode>
 	$aToken = explode('-', $sToken);
 	if (count($aToken) != 5)
 	{
@@ -111,19 +111,82 @@ function GetContext($oP, $sToken)
 		throw new CoreException("Unexpected value for step: '$iStep' is not started or exceeds allowed values");
 	}
 
-	// Find the approver amongst the existing approvers for the given step...
+	// Given the passcode, find the approver amongst the existing approvers for the given step...
 	//
 	$bFoundRecord = false;
+	$oSubstitute = null;
 	foreach($aSteps[$iStep]['approvers'] as $aApproverData)
 	{
-		if (($aApproverData['class'] == get_class($oApprover)) && ($oApprover->GetKey() == $aApproverData['id']))
+		if ($bFoundRecord)
 		{
-			$bFoundRecord = true;
+			break;
+		}
 
-			if ($aApproverData['passcode'] != $sPassCode)
+		if ( ($aApproverData['class'] == get_class($oApprover))
+				&& ($aApproverData['id'] == $oApprover->GetKey())
+				&& ($aApproverData['passcode'] == $sPassCode) )
+		{
+			if (array_key_exists('answer_time', $aApproverData)
+			   && array_key_exists('replier_index', $aApproverData))
 			{
-				throw new CoreException("Wrong passcode");
+				// The replier is one of the substitutes (not the main approver)
+				$iReplier = $aApproverData['replier_index'];
+				$aReplierData = $aApproverData['forward'][$iReplier];
+				$oReplier = MetaModel::GetObject($aReplierData['class'], $aReplierData['id'], false);
+				$sReplierName = is_null($oReplier) ? $aReplierData['class'].'::'.$aReplierData['id'].' (deleted)'
+																: $oReplier->GetName();
+				$oP->p(Dict::Format('Approval:Form:AnswerGivenBy', $sReplierName));
+				throw new QuitException();
 			}
+
+			$bFoundRecord = true;
+		}
+		elseif (array_key_exists('forward', $aApproverData))
+		{
+			foreach($aApproverData['forward'] as $iSubstitue => $aSubstituteData)
+			{
+				if ( ($aSubstituteData['class'] == get_class($oApprover))
+						&& ($aSubstituteData['id'] == $oApprover->GetKey())
+						&& ($aSubstituteData['passcode'] == $sPassCode) )
+				{
+					// Ultimate check: either nobody has answered (for this approver), or the existing answer is from the current replier
+					if (array_key_exists('answer_time', $aApproverData))
+					{
+						if (array_key_exists('replier_index', $aApproverData))
+						{
+							$iReplier = $aApproverData['replier_index'];
+							if ($iReplier != $iSubstitue)
+							{
+								// The replier is not the current subtitute
+								$aReplierData = $aApproverData['forward'][$iReplier];
+								$oReplier = MetaModel::GetObject($aReplierData['class'], $aReplierData['id'], false);
+								$sReplierName = is_null($oReplier) ? $aReplierData['class'].'::'.$aReplierData['id'].' (deleted)'
+																				: $oReplier->GetName();
+								$oP->p(Dict::Format('Approval:Form:AnswerGivenBy', $sReplierName));
+								throw new QuitException();
+							}
+						}
+						else
+						{
+							// The replier is the main approver (not the current substitue)
+							$oReplier = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
+							$sReplierName = is_null($oReplier) ? $aApproverData['class'].'::'.$aApproverData['id'].' (deleted)'
+																			: $oReplier->GetName();
+							$oP->p(Dict::Format('Approval:Form:AnswerGivenBy', $sReplierName));
+							throw new QuitException();
+						}
+					}
+					$oApprover = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
+					$oSubstitute = MetaModel::GetObject($aSubstituteData['class'], $aSubstituteData['id'], false);
+					if (!$oApprover || !$oSubstitute)
+					{
+						$oP->p(Dict::S('Approval:Form:ApproverDeleted'));
+						throw new QuitException();
+					}
+					$bFoundRecord = true;
+					break;
+				}
+			}			
 		}
 	}
 
@@ -132,25 +195,25 @@ function GetContext($oP, $sToken)
 		throw new CoreException("Unexpected approver for this step");
 	}
 
-	return array($oScheme, $iStep, $oApprover, $oObject);
+	return array($oScheme, $iStep, $oApprover, $oObject, $oSubstitute);
 }
 
 
 
 function ShowApprovalForm($oP, $sToken)
 {
-	list($oScheme, $iStep, $oApprover, $oObject) = GetContext($oP, $sToken);
+	list($oScheme, $iStep, $oApprover, $oObject, $oSubstitute) = GetContext($oP, $sToken);
 
-	$oScheme->DisplayApprovalForm($oP, $oApprover, $oObject, $sToken);
+	$oScheme->DisplayApprovalForm($oP, $oApprover, $oObject, $sToken, $oSubstitute);
 }
 
 function SubmitAnswer($oP, $sToken, $bApprove)
 {
-	list($oScheme, $iStep, $oApprover, $oObject) = GetContext($oP, $sToken);
+	list($oScheme, $iStep, $oApprover, $oObject, $oSubstitute) = GetContext($oP, $sToken);
 
 	// Record the approval/rejection
 	//
-	$oScheme->OnAnswer($iStep, $oApprover, $bApprove);
+	$oScheme->OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute);
 
 	if ($oScheme->Get('status') == 'accepted')
 	{
@@ -220,7 +283,7 @@ catch(QuitException $e)
 catch(CoreException $e)
 {
 	require_once(APPROOT.'/setup/setuppage.class.inc.php');
-	$oP = new SetupWebPage(Dict::S('UI:PageTitle:FatalError'));
+	$oP = new SetupPage(Dict::S('UI:PageTitle:FatalError'));
 	$oP->set_base(utils::GetAbsoluteUrlAppRoot().'pages/');
 	$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");	
 	$oP->error(Dict::Format('UI:Error_Details', $e->getHtmlDesc()));	
@@ -257,7 +320,7 @@ catch(CoreException $e)
 catch(Exception $e)
 {
 	require_once(APPROOT.'/setup/setuppage.class.inc.php');
-	$oP = new SetupWebPage(Dict::S('UI:PageTitle:FatalError'));
+	$oP = new SetupPage(Dict::S('UI:PageTitle:FatalError'));
 	$oP->set_base(utils::GetAbsoluteUrlAppRoot().'pages/');
 	$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");	
 	$oP->error(Dict::Format('UI:Error_Details', $e->getMessage()));	

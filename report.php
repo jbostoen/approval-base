@@ -29,6 +29,28 @@ require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 
 
 
+function DoShowAllStatuses($oP, $sClass)
+{
+	if (strlen($sClass) == 0)
+	{
+		throw new Exception("Missing mandatory param 'class'");
+	}
+	$oP->add('<h1>Helper tool for training and documentation</h1>');
+	$oP->p('Showing statuses for all of the approvals (ongoing or not!)');
+
+	$aClasses = MetaModel::EnumChildClasses($sClass, ENUM_CHILD_CLASSES_ALL); // Including the specified class itself
+	$sClassList = implode(", ", CMDBSource::Quote($aClasses));
+	$oSearch = DBObjectSearch::FromOQL("SELECT ApprovalScheme WHERE obj_class IN ($sClassList)");
+	$oSet = new DBObjectSet($oSearch);
+	while ($oScheme = $oSet->Fetch())
+	{
+		$oObject = MetaModel::GetObject($oScheme->Get('obj_class'), $oScheme->Get('obj_key'));
+		$oP->p('Approval for '.$oScheme->GetHyperlink());
+		$oP->add($oScheme->GetDisplayStatus($oP));
+	}
+}
+
+
 function DoShowOngoing($oP, $sClass)
 {
 	if (strlen($sClass) == 0)
@@ -82,6 +104,11 @@ try
 
 	switch($sOperation)
 	{
+		case 'show_all_statuses':
+		// This is an helper for troubleshooting the display of statuses and/or document the module
+		DoShowAllStatuses($oP, $sClass);
+		break;
+
 		case 'show_ongoing':
 		default:
 		DoShowOngoing($oP, $sClass);
@@ -93,7 +120,7 @@ try
 catch(CoreException $e)
 {
 	require_once(APPROOT.'/setup/setuppage.class.inc.php');
-	$oP = new SetupWebPage(Dict::S('UI:PageTitle:FatalError'));
+	$oP = new SetupPage(Dict::S('UI:PageTitle:FatalError'));
 	$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");	
 	$oP->error(Dict::Format('UI:Error_Details', $e->getHtmlDesc()));	
 	$oP->output();
@@ -122,7 +149,7 @@ catch(CoreException $e)
 catch(Exception $e)
 {
 	require_once(APPROOT.'/setup/setuppage.class.inc.php');
-	$oP = new SetupWebPage(Dict::S('UI:PageTitle:FatalError'));
+	$oP = new SetupPage(Dict::S('UI:PageTitle:FatalError'));
 	$oP->add("<h1>".Dict::S('UI:FatalErrorMessage')."</h1>\n");	
 	$oP->error(Dict::Format('UI:Error_Details', $e->getMessage()));	
 	$oP->output();

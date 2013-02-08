@@ -48,10 +48,11 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Form:Title' => 'Approbation',
 	'Approval:Form:Ref' => 'Processus d\'approbation pour %1$s',
 
-	'Approval:Form:ApproverDeleted' => 'Désolé, l\'enregristrement correspondant à votre identité a été supprimé.',
+	'Approval:Form:ApproverDeleted' => 'Désolé, l\'enregistrement correspondant à votre identité a été supprimé.',
 	'Approval:Form:ObjectDeleted' => 'Désolé, l\'object de l\'approbation a été supprimé.',
 
-	'Approval:Form:AlreadyApproved' => 'Désolé, le processus d\'approbation a été complété. Résultat: apprové.',
+	'Approval:Form:AnswerGivenBy' => 'Désolé, la réponse a déjà été donnée par \'%1$s\'', 
+	'Approval:Form:AlreadyApproved' => 'Désolé, le processus d\'approbation a été complété. Résultat: approuvé.',
 	'Approval:Form:AlreadyRejected' => 'Désolé, le processus d\'approbation a été complété. Résultat: Rejecté.',
 
 	'Approval:Form:StepApproved' => 'Désolé cette phase a été réalisé avec le résultat: Apprové. Le processus d\'approbation continue...',
@@ -59,7 +60,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 
 	'Approval:Form:AnswerRecorded-Continue' => 'Votre réponse a été enregistrée. Le processus d\'approbation continue...',
 	'Approval:Form:AnswerRecorded-Approved' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine avec succès.',
-	'Approval:Form:AnswerRecorded-Rejected' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine avec échec.',
+	'Approval:Form:AnswerRecorded-Rejected' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine en échec.',
 
 	'Approval:ChangeTracking-MoreInfo' => 'Processus d\'approbation',
 
