@@ -158,6 +158,14 @@ abstract class ApprovalScheme extends DBObject
 	}
 
 	/**
+	 * Can be overriden for simulation purposes (troubleshooting, tutorial)
+	 */
+	public function Now()
+	{
+		return time();
+	}
+
+	/**
 	 * Helper to decode the approval sequences (steps)
 	 */
 	public function GetSteps()
@@ -338,7 +346,6 @@ tr.approval-substitutes td div{
 .approval-substitutes.closed {
 	display: none;
 }
-
 EOF
 		);
 		$sArrow = "<img src=\"$sImgArrow\" style=\"vertical-align:middle;\">";
@@ -497,7 +504,8 @@ EOF
 				if (array_key_exists('forward', $aApproverData))
 				{
 					$bShowClosed = true;
-					$sId = "substitutes_".$aApproverData['passcode'];
+					static $iId = 0;
+					$sId = "substitutes_".$iId++;
 
 					if (array_key_exists('replier_index', $aApproverData))
 					{
@@ -730,7 +738,7 @@ EOF
 			//
 			$aStepData = &$aSteps[$iCurrentStep];
 			$aStepData['status'] = 'ongoing';
-			$aStepData['started'] = time();
+			$aStepData['started'] = $this->Now();
 
 			$oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'));
 			foreach($aStepData['approvers'] as &$aApproverData)
@@ -741,15 +749,15 @@ EOF
 					$this->SendApprovalInvitation($oApprover, $oObject, $aApproverData['passcode']);
 				}
 			}
-			$this->Set('timeout', $this->ComputeTimeout());
 			$this->SetSteps($aSteps);
+			$this->Set('timeout', $this->ComputeTimeout());
 			$this->DBUpdate();
 		}
 		else
 		{
 			// Done !
 			//
-			$this->Set('ended', time());
+			$this->Set('ended', $this->Now());
 			$this->Set('status', $bPrevApproved ? 'accepted' : 'rejected');
 			$this->DBUpdate();
 
@@ -766,7 +774,7 @@ EOF
 				if ($oObject->IsModified())
 				{
 					$oChange = MetaModel::NewObject("CMDBChange");
-					$oChange->Set("date", time());
+					$oChange->Set("date", $this->Now());
 					$oChange->Set("userinfo", Dict::S('Approval:ChangeTracking-MoreInfo'));
 					$iChangeId = $oChange->DBInsert();
 
@@ -803,7 +811,7 @@ EOF
 				// Record the approval result
 				//
 				$aApproverData['approval'] = $bApprove;
-				$aApproverData['answer_time'] = time();
+				$aApproverData['answer_time'] = $this->Now();
 
 				// The answer may be originated by the approver or a substitute
 				//
@@ -826,13 +834,14 @@ EOF
 			}
 		}
 		$this->SetSteps($aSteps);
+		$this->Set('timeout', $this->ComputeTimeout());
 		$this->DBUpdate();
 
 		$bStepResult = $this->GetStepResult($aStepData);
 		if (!is_null($bStepResult))
 		{
 			$aStepData['status'] = 'done';
-			$aStepData['ended'] = time();
+			$aStepData['ended'] = $this->Now();
 			$aStepData['approved'] = $bStepResult;
 			$this->SetSteps($aSteps);
 			$this->Set('timeout', null);
@@ -956,12 +965,12 @@ EOF
 		}
 
 		$iStepStarted = $this->ComputeLastStart();
-		if (time() >= $this->ComputeDeadline($iStepStarted, $aStepData['timeout_sec']))
+		if ($this->Now() >= $this->ComputeDeadline($iStepStarted, $aStepData['timeout_sec']))
 		{
 			// Time is over for the current step!
 			//
 			$aStepData['status'] = 'timedout';
-			$aStepData['ended'] = time();
+			$aStepData['ended'] = $this->Now();
 			$aStepData['approved'] = $aStepData['timeout_approve'];
 			$this->SetSteps($aSteps);
 			$this->Set('timeout', null);
@@ -987,11 +996,11 @@ EOF
 					// Skip this forward approver if already notified
 					if (array_key_exists('sent_time', $aForwardData)) continue;
 
-					if (time() >= $this->ComputeDeadline($iStepStarted, $aStepData['timeout_sec'] * $aForwardData['timeout_percent'] / 100))
+					if ($this->Now() >= $this->ComputeDeadline($iStepStarted, $aStepData['timeout_sec'] * $aForwardData['timeout_percent'] / 100))
 					{
 						// Time is over for this approver: forward the notification
 						//
-						$aForwardData['sent_time'] = time();
+						$aForwardData['sent_time'] = $this->Now();
 						$oApprover = MetaModel::GetObject($aForwardData['class'], $aForwardData['id'], false);
 						if ($oApprover)
 						{
@@ -1354,7 +1363,7 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 			{
 				$oApproval->Set('obj_class', get_class($oObject));
 				$oApproval->Set('obj_key', $oObject->GetKey());
-				$oApproval->Set('started', time());
+				$oApproval->Set('started', $this->Now());
 				$oApproval->DBInsert();
 
 				$oApproval->StartNextStep();
