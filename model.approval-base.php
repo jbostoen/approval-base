@@ -500,6 +500,11 @@ EOF
 				else
 				{
 					$sAnswer = "<img src=\"$sImgOngoing\">";
+					if (($aStepData['status'] == 'ongoing') && !array_key_exists('forward', $aApproverData))
+					{
+						// Surround the icon with some meta data to allow a reply here
+						$sAnswer = "<span class=\"approval-replier\" approver_class=\"{$aApproverData['class']}\" approver_id=\"{$aApproverData['id']}\">$sAnswer</span>";
+					}
 				}
 				if (array_key_exists('forward', $aApproverData))
 				{
@@ -513,8 +518,13 @@ EOF
 					}
 					else
 					{
-						// The answer is the one of 
+						// The answer is the one of the main approver
 						$sApproverAnswer = $sAnswer;
+					}
+					if (($aStepData['status'] == 'ongoing') && !array_key_exists('approval', $aApproverData))
+					{
+						// Surround the icon with some meta data to allow a reply here
+						$sApproverAnswer = "<span class=\"approval-replier\" approver_class=\"{$aApproverData['class']}\" approver_id=\"{$aApproverData['id']}\">$sApproverAnswer</span>";
 					}
 
 					$sApprover = "<div class=\"approver-with-substitutes\" id=\"{$sId}\">".$sApprover.'</div>';
@@ -550,6 +560,11 @@ EOF
 							$sSubstituteAnswer = "<img src=\"$sImgOngoing\">";
 							$sSubstituteClass = "";
 							$bShowClosed = false;
+							if (($aStepData['status'] == 'ongoing') && !array_key_exists('approval', $aApproverData))
+							{
+								// Surround the icon with some meta data to allow a reply here
+								$sSubstituteAnswer = "<span class=\"approval-replier\" approver_class=\"{$aApproverData['class']}\" approver_id=\"{$aApproverData['id']}\" substitute_class=\"{$aForwardData['class']}\" substitute_id=\"{$aForwardData['id']}\">$sSubstituteAnswer</span>";
+							}
 						}
 						else
 						{
@@ -1004,7 +1019,8 @@ EOF
 						$oApprover = MetaModel::GetObject($aForwardData['class'], $aForwardData['id'], false);
 						if ($oApprover)
 						{
-							$this->SendApprovalInvitation($oApprover, $oObject, $aForwardData['passcode']);
+							$oSubstituteTo = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
+							$this->SendApprovalInvitation($oApprover, $oObject, $aForwardData['passcode'], $oSubstituteTo);
 						}
 					}
 				}
@@ -1053,7 +1069,7 @@ EOF
 	/**
 	 * Build and send the message for a given approver (can be a forwarded approval request)
 	 */	 	
-	public function SendApprovalInvitation($oToPerson, $oObj, $sPassCode)
+	public function SendApprovalInvitation($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null)
 	{
 		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
 
