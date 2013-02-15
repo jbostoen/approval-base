@@ -1379,7 +1379,7 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 			{
 				$oApproval->Set('obj_class', get_class($oObject));
 				$oApproval->Set('obj_key', $oObject->GetKey());
-				$oApproval->Set('started', $this->Now());
+				$oApproval->Set('started', $oApproval->Now());
 				$oApproval->DBInsert();
 
 				$oApproval->StartNextStep();
