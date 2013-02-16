@@ -1333,7 +1333,11 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 		$sReachingState = $oObject->GetState();
 		if (!empty($sReachingState))
 		{
-			$this->OnReachingState($oObject, $sReachingState);
+			$sStateAttCode = MetaModel::GetStateAttributeCode(get_class($oObject));
+			if ($oObject->GetOriginal($sStateAttCode) != $sReachingState)
+			{
+				$this->OnReachingState($oObject, $sReachingState);
+			}
 		}
 	}
 
