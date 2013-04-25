@@ -1272,7 +1272,7 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 
 		$oApprovSearch = DBObjectSearch::FromOQL('SELECT ApprovalScheme WHERE obj_class = :obj_class AND obj_key = :obj_key');
 		$oApprovSearch->AllowAllData();
-		// Get the ongoing approvals, most recent first
+		// Get the ongoing approval
 		$oApprovals = new DBObjectSet($oApprovSearch, array('started' => false), array('obj_class' => $sClass, 'obj_key' => $oObject->GetKey()));
 		if($oScheme = $oApprovals->Fetch())
 		{
@@ -1333,11 +1333,7 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 		$sReachingState = $oObject->GetState();
 		if (!empty($sReachingState))
 		{
-			$sStateAttCode = MetaModel::GetStateAttributeCode(get_class($oObject));
-			if ($oObject->GetOriginal($sStateAttCode) != $sReachingState)
-			{
-				$this->OnReachingState($oObject, $sReachingState);
-			}
+			$this->OnReachingState($oObject, $sReachingState);
 		}
 	}
 
@@ -1377,16 +1373,26 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 			{
 				throw new Exception("Approval plugin: please implement the function GetApprovalScheme");
 			}
+
 			// Calling: GetApprovalScheme($oObject, $sReachingState)
 			$oApproval = call_user_func($aCallSpec, $oObject, $sReachingState);
 			if (!is_null($oApproval))
 			{
-				$oApproval->Set('obj_class', get_class($oObject));
-				$oApproval->Set('obj_key', $oObject->GetKey());
-				$oApproval->Set('started', $oApproval->Now());
-				$oApproval->DBInsert();
-
-				$oApproval->StartNextStep();
+				// Make sure that there is no ongoing approval for that object
+				// (unfortunately the original state value is unknown at this point)
+				//
+				$oApprovSearch = DBObjectSearch::FromOQL('SELECT ApprovalScheme WHERE status = \'ongoing\' AND obj_class = :obj_class AND obj_key = :obj_key');
+				$oApprovSearch->AllowAllData();
+				$oApprovals = new DBObjectSet($oApprovSearch, array(), array('obj_class' => get_class($oObject), 'obj_key' => $oObject->GetKey()));
+				if ($oApprovals->Count() == 0)
+				{
+					$oApproval->Set('obj_class', get_class($oObject));
+					$oApproval->Set('obj_key', $oObject->GetKey());
+					$oApproval->Set('started', $oApproval->Now());
+					$oApproval->DBInsert();
+	
+					$oApproval->StartNextStep();
+				}
 			}
 		}
 	}
