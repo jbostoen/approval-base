@@ -30,10 +30,10 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Tab:StepEnd-Limit' => 'Limite de temps (Résultat implicite)',
 	'Approval:Tab:StepEnd-Theoretical' => 'Limite de temps théorique (duréé limitée à %1$s mn)',
 	'Approval:Tab:StepSumary-Ongoing' => 'En attente de réponse',
-	'Approval:Tab:StepSumary-OK' => 'Apprové',
-	'Approval:Tab:StepSumary-KO' => 'Rejecté',
-	'Approval:Tab:StepSumary-OK-Timeout' => 'Apprové (délai dépassé)',
-	'Approval:Tab:StepSumary-KO-Timeout' => 'Rejecté (délai dépassé)',
+	'Approval:Tab:StepSumary-OK' => 'Approuvé',
+	'Approval:Tab:StepSumary-KO' => 'Rejeté',
+	'Approval:Tab:StepSumary-OK-Timeout' => 'Approuvé (délai dépassé)',
+	'Approval:Tab:StepSumary-KO-Timeout' => 'Rejeté (délai dépassé)',
 	'Approval:Tab:StepSumary-Idle' => 'Pas démarré',
 	'Approval:Tab:StepSumary-Skipped' => 'Passé',
 
@@ -41,8 +41,8 @@ Dict::Add('FR FR', 'French', 'Français', array(
 
 	'Approval:Error:Email' => 'Le mel n\'a pu être envoyé (%1$s)',
 
-	'Approval:Action-Approve' => 'Approver',
-	'Approval:Action-Reject' => 'Rejecter',
+	'Approval:Action-Approve' => 'Approuver',
+	'Approval:Action-Reject' => 'Rejeter',
 	'Approval:Action-ViewMoreInfo' => 'Voir plus d\'information',
 
 	'Approval:Form:Title' => 'Approbation',
