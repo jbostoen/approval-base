@@ -952,7 +952,8 @@ EOF
 				$iMinTimeout = min($iMinTimeout, $aStepData['timeout_sec'] * $aForwardData['timeout_percent'] / 100);
 			}
 		}
-		return $this->ComputeDeadline($iStepStarted, $iMinTimeout);
+		// Note: it is important to make sure that iMinTimeout is actually an integer (strange effects otherwise!) 
+		return $this->ComputeDeadline($iStepStarted, floor($iMinTimeout));
 	}
 
 	/**
