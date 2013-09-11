@@ -37,6 +37,10 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Tab:StepSumary-Idle' => 'Pas démarré',
 	'Approval:Tab:StepSumary-Skipped' => 'Passé',
 
+	'Approval:Tab:StepEnd-Condition-FirstReject' => 'Etape conclue au premier rejet, ou si approuvée à 100%',
+	'Approval:Tab:StepEnd-Condition-FirstApprove' => 'Etape conclue à la première approbation, ou si rejetée à 100%',
+	'Approval:Tab:StepEnd-Condition-FirstReply' => 'Etape conclue à la première réponse obtenue',
+
 	'Approval:Tab:Error' => 'Une erreur est survenue durant le processus d\'approbation %1$s',
 
 	'Approval:Error:Email' => 'Le mel n\'a pu être envoyé (%1$s)',

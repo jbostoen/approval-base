@@ -198,7 +198,7 @@ abstract class ApprovalScheme extends DBObject
 	 * @param boolean $bApproveOnTimeout Set to true to approve in case of timeout for the current step
 	 * @return void
 	 */
-	public function AddStep($aContacts, $iTimeoutSec = 0, $bApproveOnTimeout = true)
+	public function AddStep($aContacts, $iTimeoutSec = 0, $bApproveOnTimeout = true, $iExitCondition = self::EXIT_ON_FIRST_REJECT)
 	{
 		$aApprovers = array();
 		foreach($aContacts as $aApproverData)
@@ -240,6 +240,7 @@ abstract class ApprovalScheme extends DBObject
 		$aNewStep = array(
 			'timeout_sec' => $iTimeoutSec,
 			'timeout_approve' => $bApproveOnTimeout,
+			'exit_condition' => $iExitCondition,
 			'status' => 'idle', 
 			'approvers' => $aApprovers,
 		);
@@ -610,6 +611,23 @@ EOF
 				'content_html' => "<div class=\"$sDivClass\">$sStepHtml</div>\n",
 			);
 
+			// New feature: the array entry 'exit_condition' might be missing
+			$iExitCondition = isset($aStepData['exit_condition']) ? $aStepData['exit_condition'] : self::EXIT_ON_FIRST_REJECT;
+			switch($iExitCondition)
+			{
+				case self::EXIT_ON_FIRST_REPLY:
+				$sExplainCondition = Dict::S('Approval:Tab:StepEnd-Condition-FirstReply');
+				break;
+	
+				case self::EXIT_ON_FIRST_APPROVE:
+				$sExplainCondition = Dict::S('Approval:Tab:StepEnd-Condition-FirstApprove');
+				break;
+	
+				case self::EXIT_ON_FIRST_REJECT:
+				default:
+				$sExplainCondition = Dict::S('Approval:Tab:StepEnd-Condition-FirstReject');
+				break;
+			}
 			if ($iStepEnd)
 			{
 				// Display the date iif it has changed
@@ -628,7 +646,7 @@ EOF
 				$aDisplayData[] = array(
 					'date_html' => '<span class="'.$sTimeClass.'" title="'.$sTimeInfo.'">'.$sStepEndDate.'</span>',
 					'time_html' => '<span class="'.$sTimeClass.'" title="'.$sTimeInfo.'">'.$this->GetDisplayTime($iStepEnd).'</span>',
-					'content_html' => "<div class=\"$sArrowDivClass\">$sArrow</div>\n",
+					'content_html' => "<div class=\"$sArrowDivClass\" title=\"$sExplainCondition\">$sArrow</div>\n",
 				);
 			}
 			else
@@ -636,7 +654,7 @@ EOF
 				$aDisplayData[] = array(
 					'date_html' => '',
 					'time_html' => '',
-					'content_html' => "<div class=\"$sArrowDivClass\">$sArrow</div>\n",
+					'content_html' => "<div class=\"$sArrowDivClass\" title=\"$sExplainCondition\">$sArrow</div>\n",
 				);
 			}
 		}
@@ -1029,34 +1047,64 @@ EOF
 	}
 
 	/**
+	 * Legacy behavior (defaults to this value if the flag is omitted).
+	 * Terminate the step with failure as soon as one rejection occurs.
+	 * The step successes if everybody approves.
+	 */	
+	const EXIT_ON_FIRST_REJECT = 1;
+	/**
+	 * Terminate the step with success as soon as one approval occurs.
+	 * The step fails if everybody rejects.
+	 */	
+	const EXIT_ON_FIRST_APPROVE = 2;
+	/**
+	 * Terminate the step with the first reply.
+	 * Failure or success of the step depends solely on this unique reply.
+	 */	
+	const EXIT_ON_FIRST_REPLY = 3;
+
+	/**
 	 * Helper: do we consider that enough votes have been given?
 	 */
 	protected function GetStepResult($aStepData)
 	{
+		// New feature: the array entry 'exit_condition' might be missing
+		$iExitCondition = isset($aStepData['exit_condition']) ? $aStepData['exit_condition'] : self::EXIT_ON_FIRST_REJECT;
+
 		$bIsExpectingAnswers = false;
+		$bLastAnswer = null;
 		foreach($aStepData['approvers'] as &$aApproverData)
 		{
 			if (array_key_exists('approval', $aApproverData))
 			{
-				if (!$aApproverData['approval'])
+				$bLastAnswer = $aApproverData['approval'];
+				if ($iExitCondition == self::EXIT_ON_FIRST_REPLY)
 				{
-					// One negative answer is enough
-					return false;
+					// One single answer makes it
+					return $bLastAnswer;
+				}
+
+				if ($bLastAnswer)
+				{
+					if ($iExitCondition == self::EXIT_ON_FIRST_APPROVE)
+					{
+						// One positive answer is enough
+						return true;
+					}
+				}
+				else
+				{
+					if ($iExitCondition == self::EXIT_ON_FIRST_REJECT)
+					{
+						// One negative answer is enough
+						return false;
+					}
 				}
 			}
 			else
 			{
-// variabe du schema d'approbation sur le step courant => end on first approval (default = no, comme avant)
-				if (false)
-				{
-					// End on first approval
-					return true;
-				}
-				else
-				{
-					// This answer is still missing
-					$bIsExpectingAnswers = true;
-				}
+				// This answer is still missing
+				$bIsExpectingAnswers = true;
 			}
 		}
 		if ($bIsExpectingAnswers)
@@ -1066,8 +1114,8 @@ EOF
 		}
 		else
 		{
-			// We have all the answers and they are 100% positive
-			return true;
+			// 100% positive or 100% negative, or the latest reply (the latter is a nonsense and should never occur)
+			return $bLastAnswer;
 		}
 	}
 
