@@ -211,6 +211,30 @@ function SubmitAnswer($oP, $sToken, $bApprove)
 {
 	list($oScheme, $iStep, $oApprover, $oObject, $oSubstitute) = GetContext($oP, $sToken);
 
+	if ($oSubstitute)
+	{
+		if ($bApprove)
+		{
+			$sTrackInfo = Dict::Format('Approval:Approved-On-behalf-of', $oSubstitute->Get('friendlyname'), $oApprover->Get('friendlyname'));
+		}
+		else
+		{
+			$sTrackInfo = Dict::Format('Approval:Rejected-On-behalf-of', $oSubstitute->Get('friendlyname'), $oApprover->Get('friendlyname'));
+		}
+	}
+	else
+	{
+		if ($bApprove)
+		{
+			$sTrackInfo = Dict::Format('Approval:Approved-By', $oApprover->Get('friendlyname'));
+		}
+		else
+		{
+			$sTrackInfo = Dict::Format('Approval:Rejected-By', $oApprover->Get('friendlyname'));
+		}
+	}
+	CMDBObject::SetTrackInfo($sTrackInfo);
+
 	// Record the approval/rejection
 	//
 	$oScheme->OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute);

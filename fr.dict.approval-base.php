@@ -62,7 +62,10 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Form:AnswerRecorded-Approved' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine avec succès.',
 	'Approval:Form:AnswerRecorded-Rejected' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine en échec.',
 
-	'Approval:ChangeTracking-MoreInfo' => 'Processus d\'approbation',
+	'Approval:Approved-On-behalf-of' => 'Approuvé par %1$s pour le compte de %2$s',
+	'Approval:Rejected-On-behalf-of' => 'Rejeté par %1$s pour le compte de %2$s',
+	'Approval:Approved-By' => 'Approuvé par %1$s',
+	'Approval:Rejected-By' => 'Rejeté par %1$s',
 
 	'Approval:Ongoing-Title' => 'Approbation en attente',
 	'Approval:Ongoing-Title+' => 'Processus d\'approbation pour l\'élément %1$s',

@@ -788,12 +788,7 @@ EOF
 				}
 				if ($oObject->IsModified())
 				{
-					$oChange = MetaModel::NewObject("CMDBChange");
-					$oChange->Set("date", $this->Now());
-					$oChange->Set("userinfo", Dict::S('Approval:ChangeTracking-MoreInfo'));
-					$iChangeId = $oChange->DBInsert();
-
-					$oObject->DBUpdateTracked($oChange);
+					$oObject->DBUpdate();
 				}
 			}
 		}
@@ -1051,8 +1046,17 @@ EOF
 			}
 			else
 			{
-				// This answer is still missing
-				$bIsExpectingAnswers = true;
+// variabe du schema d'approbation sur le step courant => end on first approval (default = no, comme avant)
+				if (false)
+				{
+					// End on first approval
+					return true;
+				}
+				else
+				{
+					// This answer is still missing
+					$bIsExpectingAnswers = true;
+				}
 			}
 		}
 		if ($bIsExpectingAnswers)

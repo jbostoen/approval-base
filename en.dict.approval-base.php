@@ -62,7 +62,10 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Form:AnswerRecorded-Approved' => 'Your answer has been recorded: the approval is now complete with success.',
 	'Approval:Form:AnswerRecorded-Rejected' => 'Your answer has been recorded: the approval is now complete with failure.',
 
-	'Approval:ChangeTracking-MoreInfo' => 'Approval process',
+	'Approval:Approved-On-behalf-of' => 'Approved by %1$s on behalf of %2$s',
+	'Approval:Rejected-On-behalf-of' => 'Rejected by %1$s on behalf of %2$s',
+	'Approval:Approved-By' => 'Approved by %1$s',
+	'Approval:Rejected-By' => 'Rejected by %1$s',
 
 	'Approval:Ongoing-Title' => 'Ongoing approvals',
 	'Approval:Ongoing-Title+' => 'Approval processes for objects of class %1$s',
