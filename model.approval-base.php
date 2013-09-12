@@ -127,7 +127,10 @@ abstract class ApprovalScheme extends DBObject
 	 * @param string iContactId The approver object id
 	 * @return string The form body in HTML
 	 */	 	
-	abstract public function GetFormBody($sContactClass, $iContactId);
+	public function GetFormBody($sContactClass, $iContactId)
+	{
+		return $this->GetEmailSubject($sContactClass, $iContactId);
+	}
 
 	/**
 	 * Called when the approval is being completed with success
@@ -144,6 +147,55 @@ abstract class ApprovalScheme extends DBObject
 	 * @return void The object can be modified within this handler, it will be saved later on
 	 */	 	
 	abstract public function DoReject(&$oObject);
+
+	/**
+	 * Optionaly override this verb to change the way object details are displayed
+	 * Appeared in Version 1.2 of the module 	 
+	 *
+	 * @return void
+	 */	 	
+	public function DisplayObjectDetails($oPage, $oApprover, $oObject, $oSubstitute = null)
+	{
+		if ($this->IsLoginMandatoryToSeeObjectDetails($oApprover, $oObject))
+		{
+			require_once(APPROOT.'/application/loginwebpage.class.inc.php');
+			LoginWebPage::DoLogin(); // Check user rights and prompt if needed
+		}
+		$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
+	}
+
+	/**
+	 * Optionaly override this verb to change the way the changes are tracked in the object history and in the case log (if the comment are copied there)
+	 * Appeared in Version 1.2 of the module 	 
+	 *
+	 * @return void
+	 */	 	
+	public function GetIssuerInfo($bApproved, $oApprover, $oSubstitute = null)
+	{
+		if ($oSubstitute)
+		{
+			if ($bApproved)
+			{
+				$sRes = Dict::Format('Approval:Approved-On-behalf-of', $oSubstitute->Get('friendlyname'), $oApprover->Get('friendlyname'));
+			}
+			else
+			{
+				$sRes = Dict::Format('Approval:Rejected-On-behalf-of', $oSubstitute->Get('friendlyname'), $oApprover->Get('friendlyname'));
+			}
+		}
+		else
+		{
+			if ($bApproved)
+			{
+				$sRes = Dict::Format('Approval:Approved-By', $oApprover->Get('friendlyname'));
+			}
+			else
+			{
+				$sRes = Dict::Format('Approval:Rejected-By', $oApprover->Get('friendlyname'));
+			}
+		}
+		return $sRes;
+	}
 
 	/**
 	 * Optionaly override this verb to change the way working hours will be computed
@@ -487,16 +539,21 @@ EOF
 				if (array_key_exists('approval', $aApproverData))
 				{
 					$bApproved = $aApproverData['approval'];
-					$sAnswerDate = $this->GetDisplayTime($aApproverData['answer_time']);
-					
+					$sTitleHtml = $this->GetDisplayTime($aApproverData['answer_time']);
+					if (isset($aApproverData['comment']) && $aApproverData['comment'] != '')
+					{
+						$sTitleHtml .= '<br/>'.str_replace(array("\r\n", "\n", "\r"), "<br/>", htmlentities($aApproverData['comment'], ENT_QUOTES, 'UTF-8'));
+					}
 					if ($bApproved)
 					{
-						$sAnswer = "<img src=\"$sImgApproved\" title=\"$sAnswerDate\">";
+						$sAnswer = "<img src=\"$sImgApproved\">";
 					}
 					else
 					{
-						$sAnswer = "<img src=\"$sImgRejected\" title=\"$sAnswerDate\">";
+						$sAnswer = "<img src=\"$sImgRejected\">";
 					}
+					$sTitleEsc = addslashes($sTitleHtml);
+					$oPage->add_ready_script("$('#answer_$iStep"."_".$aApproverData['id']."').tooltip({items: 'div>img', content: '$sTitleEsc'});");
 				}
 				else
 				{
@@ -595,7 +652,7 @@ EOF
 				if (strlen($sAnswer) > 0)
 				{
 					$sTriangle = "<img src=\"$sImgBubbleTriangle\">";
-					$sStepHtml .= '<td style="vertical-align: top;"><div class="approver-answer">'.$sTriangle.$sAnswer.'</div></td>';
+					$sStepHtml .= '<td style="vertical-align: top;"><div class="approver-answer" id="answer_'.$iStep.'_'.$aApproverData['id'].'">'.$sTriangle.$sAnswer.'</div></td>';
 				}
 				else
 				{
@@ -818,7 +875,7 @@ EOF
 	 * - record the answer
 	 * Then, start the next step if the current one is over 
 	 */	 
-	public function OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute = null)
+	public function OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute = null, $sComment = '')
 	{
 		if ($this->Get('status') != 'ongoing')
 		{
@@ -840,6 +897,36 @@ EOF
 				//
 				$aApproverData['approval'] = $bApprove;
 				$aApproverData['answer_time'] = $this->Now();
+				if ($sComment != '')
+				{
+					$aApproverData['comment'] = $sComment;
+
+					$sAttCode = MetaModel::GetModuleSetting('approval-base', 'comment_attcode');
+					if ($sAttCode != '')
+					{
+						if (MetaModel::IsValidAttCode($this->Get('obj_class'), $sAttCode))
+						{
+							if ($oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'), false))
+							{
+								$value = $oObject->Get($sAttCode);
+								$oAttDef = MetaModel::GetAttributeDef($this->Get('obj_class'), $sAttCode);
+								if ($oAttDef instanceof AttributeCaseLog)
+								{
+									$value->AddLogEntry($sComment, $this->GetIssuerInfo($bApprove, $oApprover, $oSubstitute));
+								}
+								else
+								{
+									// Cumulate into the given (hopefully) text attribute
+									$sDate = date(Dict::S('UI:CaseLog:DateFormat'));
+									$value .= "\n$sDate - ".$this->GetIssuerInfo($bApprove, $oApprover, $oSubstitute)." :";
+									$value .= "\n".$sComment;
+								}
+								$oObject->Set($sAttCode, $value);
+								$oObject->DBUpdate();
+							}
+						}
+					}
+				}
 
 				// The answer may be originated by the approver or a substitute
 				//
@@ -1126,27 +1213,18 @@ EOF
 	{
 		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
 
-		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
-		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);;
+		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
+		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
 		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
 
-		$sReplyOk = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=approve';
-		$sReplyKo = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=reject';
-		$sMoreInfo = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken.'&operation=';
+		$sReplyUrl = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken;
 
 		$sBody = '<html>';
 		$sBody .= '<body>';
 		$sBody .= '<h3>'.$sTitle.'</h3>';
 		$sBody .= '<p>'.$sIntroduction.'</p>';
 		$sBody .= '<p>';
-		$sBody .= '<a href="'.$sReplyOk.'">'.Dict::S('Approval:Action-Approve').'</a>';
-		$sBody .= '&nbsp;&nbsp;&nbsp;';
-		$sBody .= '<a href="'.$sReplyKo.'">'.Dict::S('Approval:Action-Reject').'</a>';
-		if ($this->IsAllowedToSeeObjectDetails($oToPerson, $oObj))
-		{
-			$sBody .= '&nbsp;&nbsp;&nbsp;';
-			$sBody .= '<a href="'.$sMoreInfo.'">'.Dict::S('Approval:Action-ViewMoreInfo').'</a>';
-		}
+		$sBody .= '<a href="'.$sReplyUrl.'">'.Dict::S('Approval:Action-ApproveOrReject').'</a>';
 		$sBody .= '</p>';
 
 		$sBody .= '</body>';
@@ -1174,47 +1252,78 @@ EOF
 		}
 	}
 	
+	protected function MakeFormHeader($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
+	{
+		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
+
+		$sIntroduction = MetaModel::ApplyParams($this->GetFormBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
+		$oPage->add("<div id=\"form_approval_introduction\">".$sIntroduction."</div>\n");
+	}
+
+	protected function MakeFormInputs($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
+	{
+		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
+		$oPage->add("<form action=\"\" id=\"form_approve\" method=\"post\">\n");
+		$oPage->add("<input type=\"hidden\" id=\"my_operation\" name=\"operation\" value=\"_not_set_\">");
+		$oPage->add("<input type=\"hidden\" name=\"token\" value=\"$sToken\">");
+	
+		$oPage->add('<div title="'.Dict::S('Approval:Comment-Tooltip').'">'.Dict::S('Approval:Comment-Label').'</div>');
+		$oPage->add("<textarea type=\"textarea\" name=\"comment\" id=\"comment\" class=\"resizable\" cols=\"80\" rows=\"5\"></textarea>");
+		$oPage->add("<input type=\"submit\" id=\"approval-button\" onClick=\"$('#my_operation').val('do_approve');\" value=\"".Dict::S('Approval:Action-Approve')."\">");
+		$oPage->add("<input type=\"submit\" id=\"rejection-button\" onClick=\"$('#my_operation').val('do_reject');\" value=\"".Dict::S('Approval:Action-Reject')."\">");
+		$oPage->add("<span id=\"comment_mandatory\">".Dict::S('Approval:Comment-Mandatory')."</span>");
+		$oPage->add("</form>");
+		$oPage->add("</div>");
+
+		$oPage->add_ready_script(
+<<<EOF
+function RefreshRejectionButtonState()
+{
+	var sComment = $.trim($('#comment').val());
+	if (sComment.length == 0)
+	{
+		$('#rejection-button').prop('disabled', true);
+		$('#comment_mandatory').show();
+	}
+	else
+	{
+		$('#rejection-button').prop('disabled', false);
+		$('#comment_mandatory').hide();
+	}
+}
+$('#comment').bind('change keyup', function () {
+	RefreshRejectionButtonState();
+});
+RefreshRejectionButtonState();
+EOF
+		);
+	}
+
+	protected function MakeFormFooter($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
+	{
+		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
+
+		// Object details
+		//
+		if ($this->IsAllowedToSeeObjectDetails($oApprover, $oObject))
+		{
+			$this->DisplayObjectDetails($oPage, $oApprover, $oObject, $oSubstitute);
+		}
+		else
+		{
+			$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
+			$oPage->add('<div styl="font-size: smaller;">'.$sIntroduction.'</div>');
+		}
+	}
+
 	/**
 	 * Build and output the approval form for a given user
 	 **/	
 	public function DisplayApprovalForm($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
-		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
-	
-		$sBody = MetaModel::ApplyParams($this->GetFormBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
-	
-		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
-		$oPage->add("<div id=\"form_approval_introduction\">".$sBody."</div>\n");
-		$oPage->add("<form action=\"\" id=\"form_approve\" method=\"post\">\n");
-		$oPage->add("<input type=\"hidden\" id=\"my_operation\" name=\"operation\" value=\"_not_set_\">");
-		$oPage->add("<input type=\"hidden\" name=\"token\" value=\"$sToken\">");
-	//	$oP->add("<input type=\"hidden\" name=\"transaction_id\" value=\"".utils::GetNewTransactionId()."\">\n");
-	
-		$oPage->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('approve');\" value=\"".Dict::S('Approval:Action-Approve')."\">");
-		$oPage->add("<input type=\"submit\" name=\"foo\" onClick=\"$('#my_operation').val('reject');\" value=\"".Dict::S('Approval:Action-Reject')."\">");
-	
-		$oPage->add("</form>");
-		$oPage->add("</div>");
-				// 
-		$oPage->add_script(
-<<<EOF
-function SetStimulusToApply(sOperation)
-{
-	$('#operation').val(sOperation);
-}
-EOF
-);
-		// Object details
-		//
-		if ($this->IsAllowedToSeeObjectDetails($oApprover, $oObject))
-		{
-			if ($this->IsLoginMandatoryToSeeObjectDetails($oApprover, $oObject))
-			{
-				require_once(APPROOT.'/application/loginwebpage.class.inc.php');
-				LoginWebPage::DoLogin(); // Check user rights and prompt if needed
-			}
-			$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
-		}
+		$this->MakeFormHeader($oPage, $oApprover, $oObject, $sToken, $oSubstitute);
+		$this->MakeFormInputs($oPage, $oApprover, $oObject, $sToken, $oSubstitute);
+		$this->MakeFormFooter($oPage, $oApprover, $oObject, $sToken, $oSubstitute);
 	}
 
 	/**
@@ -1483,6 +1592,8 @@ class CheckApprovalTimeout implements iBackgroundProcess
 		$oMyChange->Set("date", time());
 		$oMyChange->Set("userinfo", "Automatic timeout");
 		$iChangeId = $oMyChange->DBInsertNoReload();
+		// or ... ???
+		// CMDBObject::SetTrackInfo($sTrackInfo);
 
       $aReport = array();
 

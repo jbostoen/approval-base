@@ -142,3 +142,13 @@ a.button span {
 	display: inline-block;
 	text-align: left;
 }
+#approval-button, #rejection-button {
+	margin: 0 10px 10px 10px;
+	padding: 5px 10px 5px 35px;
+}
+#approval-button {
+	background: url("approve.png") no-repeat scroll 10px center;
+}
+#rejection-button {
+	background: url("reject.png") no-repeat scroll 10px center;
+}

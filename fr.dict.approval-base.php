@@ -45,9 +45,12 @@ Dict::Add('FR FR', 'French', 'Français', array(
 
 	'Approval:Error:Email' => 'Le mel n\'a pu être envoyé (%1$s)',
 
+	'Approval:Comment-Label' => 'Commentaire',
+	'Approval:Comment-Tooltip' => 'Obligatoire pour pouvoir rejeter, optionnel pour accepter',
+	'Approval:Comment-Mandatory' => 'Veuillez saisir un commentaire pour pouvoir rejeter',
 	'Approval:Action-Approve' => 'Approuver',
 	'Approval:Action-Reject' => 'Rejeter',
-	'Approval:Action-ViewMoreInfo' => 'Voir plus d\'information',
+	'Approval:Action-ApproveOrReject' => 'Approuver ou Rejeter',
 
 	'Approval:Form:Title' => 'Approbation',
 	'Approval:Form:Ref' => 'Processus d\'approbation pour %1$s',

@@ -45,9 +45,12 @@ Dict::Add('EN US', 'English', 'English', array(
 
 	'Approval:Error:Email' => 'The email could not be sent (%1$s)',
 
+	'Approval:Comment-Label' => 'Your comment',
+	'Approval:Comment-Tooltip' => 'Mandatory for rejection, optional for approval',
+	'Approval:Comment-Mandatory' => 'A comment must be given for rejection',
 	'Approval:Action-Approve' => 'Approve',
 	'Approval:Action-Reject' => 'Reject',
-	'Approval:Action-ViewMoreInfo' => 'View more information',
+	'Approval:Action-ApproveOrReject' => 'Approve or Reject',
 
 	'Approval:Form:Title' => 'Approval',
 	'Approval:Form:Ref' => 'Approval process for %1$s',
