@@ -553,7 +553,9 @@ EOF
 						$sAnswer = "<img src=\"$sImgRejected\">";
 					}
 					$sTitleEsc = addslashes($sTitleHtml);
-					$oPage->add_ready_script("$('#answer_$iStep"."_".$aApproverData['id']."').tooltip({items: 'div>img', content: '$sTitleEsc'});");
+					// Not working in iTop <= 2.0.1
+					//$oPage->add_ready_script("$('#answer_$iStep"."_".$aApproverData['id']."').tooltip({items: 'div>img', content: '$sTitleEsc'});");
+					$oPage->add_ready_script("$('#answer_$iStep"."_".$aApproverData['id']."').qtip( { content: '$sTitleEsc', show: 'mouseover', hide: 'mouseout', style: { name: 'dark', tip: 'leftTop' }, position: { corner: { target: 'rightMiddle', tooltip: 'leftTop' }} } );");
 				}
 				else
 				{
@@ -1312,7 +1314,7 @@ EOF
 		else
 		{
 			$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
-			$oPage->add('<div styl="font-size: smaller;">'.$sIntroduction.'</div>');
+			$oPage->add('<div class="email_body">'.$sIntroduction.'</div>');
 		}
 	}
 
