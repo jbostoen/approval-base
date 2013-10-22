@@ -30,7 +30,7 @@ SetupWebPage::AddModule(
 		),
 		'mandatory' => false,
 		'visible' => false,
-		'installer' => 'approval_baseInstaller',
+		//'installer' => 'MyInstaller',
 
 		// Components
 		//
@@ -61,53 +61,3 @@ SetupWebPage::AddModule(
 		),
 	)
 );
-
-// Module installation handler
-//
-class approval_baseInstaller extends ModuleInstallerAPI
-{
-	public static function BeforeWritingConfig(Config $oConfiguration)
-	{
-		// If you want to override/force some configuration values, do it here
-		return $oConfiguration;
-	}
-
-	/**
-	 * Handler called before creating or upgrading the database schema
-	 * @param $oConfiguration Config The new configuration of the application
-	 * @param $sPreviousVersion string PRevious version number of the module (empty string in case of first install)
-	 * @param $sCurrentVersion string Current version number of the module
-	 */
-	public static function BeforeDatabaseCreation(Config $oConfiguration, $sPreviousVersion, $sCurrentVersion)
-	{
-		// If you want to migrate data from one format to another, do it here
-	}
-	
-	/**
-	 * Handler called after the creation/update of the database schema
-	 * @param $oConfiguration Config The new configuration of the application
-	 * @param $sPreviousVersion string PRevious version number of the module (empty string in case of first install)
-	 * @param $sCurrentVersion string Current version number of the module
-	 */
-	public static function AfterDatabaseCreation(Config $oConfiguration, $sPreviousVersion, $sCurrentVersion)
-	{
-		self::CreateIndexIfNotExist();
-	}
-
-	public static function AfterDatabaseUpgrade(Config $oConfiguration)
-	{
-		self::CreateIndexIfNotExist();
-	}
-
-	protected static function CreateIndexIfNotExist()
-	{
-		$sTable = MetaModel::DBGetTable('ApprovalScheme');
-		$aIndexDef = CMDBSource::QueryToArray("SHOW INDEX FROM `$sTable` WHERE Key_name = 'object_ref'");
-		if (count($aIndexDef) == 0)
-		{
-			// The index does not exist, let's create it
-			CMDBSource::Query("CREATE INDEX `object_ref` ON `$sTable` (obj_class, obj_key)");
-		}
-	}
-}
-?>

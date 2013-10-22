@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2012 Combodo SARL
+// Copyright (C) 2012-2013 Combodo SARL
 //
 //   This program is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -48,6 +48,9 @@ abstract class ApprovalScheme extends DBObject
 			"db_key_field" => "id",
 			"db_finalclass_field" => "",
 			"display_template" => "",
+			'indexes' => array(
+				array('obj_class', 'obj_key'),
+			)
 		);
 		MetaModel::Init_Params($aParams);
 		MetaModel::Init_InheritAttributes();
