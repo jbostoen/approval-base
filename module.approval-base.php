@@ -16,7 +16,7 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'approval-base/1.1.0',
+	'approval-base/1.2.0',
 	array(
 		// Identification
 		//
@@ -57,6 +57,7 @@ SetupWebPage::AddModule(
 		'settings' => array(
 			'email_sender' => 'john.foo@john.business.com',
 			'email_reply_to' => 'joao.ningem@john.business.com',
+			'comment_attcode' => '',
 		),
 	)
 );

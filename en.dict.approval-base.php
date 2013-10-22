@@ -37,13 +37,20 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Tab:StepSumary-Idle' => 'Not started',
 	'Approval:Tab:StepSumary-Skipped' => 'Skipped',
 
+	'Approval:Tab:StepEnd-Condition-FirstReject' => 'This step finishes on the first rejection, or if 100% approved',
+	'Approval:Tab:StepEnd-Condition-FirstApprove' => 'This step finishes on the first approval, or if 100% rejected',
+	'Approval:Tab:StepEnd-Condition-FirstReply' => 'This step finishes on the first reply',
+
 	'Approval:Tab:Error' => 'An error occured during the approval process: %1$s',
 
 	'Approval:Error:Email' => 'The email could not be sent (%1$s)',
 
+	'Approval:Comment-Label' => 'Your comment',
+	'Approval:Comment-Tooltip' => 'Mandatory for rejection, optional for approval',
+	'Approval:Comment-Mandatory' => 'A comment must be given for rejection',
 	'Approval:Action-Approve' => 'Approve',
 	'Approval:Action-Reject' => 'Reject',
-	'Approval:Action-ViewMoreInfo' => 'View more information',
+	'Approval:Action-ApproveOrReject' => 'Approve or Reject',
 
 	'Approval:Form:Title' => 'Approval',
 	'Approval:Form:Ref' => 'Approval process for %1$s',

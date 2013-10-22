@@ -168,7 +168,7 @@ function GetContext($oP, $sToken)
 						}
 						else
 						{
-							// The replier is the main approver (not the current substitue)
+							// The replier is the main approver (not the current substitute)
 							$oReplier = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
 							$sReplierName = is_null($oReplier) ? $aApproverData['class'].'::'.$aApproverData['id'].' (deleted)'
 																			: $oReplier->GetName();
@@ -207,37 +207,16 @@ function ShowApprovalForm($oP, $sToken)
 	$oScheme->DisplayApprovalForm($oP, $oApprover, $oObject, $sToken, $oSubstitute);
 }
 
-function SubmitAnswer($oP, $sToken, $bApprove)
+function SubmitAnswer($oP, $sToken, $bApprove, $sComment = '')
 {
 	list($oScheme, $iStep, $oApprover, $oObject, $oSubstitute) = GetContext($oP, $sToken);
 
-	if ($oSubstitute)
-	{
-		if ($bApprove)
-		{
-			$sTrackInfo = Dict::Format('Approval:Approved-On-behalf-of', $oSubstitute->Get('friendlyname'), $oApprover->Get('friendlyname'));
-		}
-		else
-		{
-			$sTrackInfo = Dict::Format('Approval:Rejected-On-behalf-of', $oSubstitute->Get('friendlyname'), $oApprover->Get('friendlyname'));
-		}
-	}
-	else
-	{
-		if ($bApprove)
-		{
-			$sTrackInfo = Dict::Format('Approval:Approved-By', $oApprover->Get('friendlyname'));
-		}
-		else
-		{
-			$sTrackInfo = Dict::Format('Approval:Rejected-By', $oApprover->Get('friendlyname'));
-		}
-	}
+	$sTrackInfo = $oScheme->GetIssuerInfo($bApprove, $oApprover, $oSubstitute);
 	CMDBObject::SetTrackInfo($sTrackInfo);
 
 	// Record the approval/rejection
 	//
-	$oScheme->OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute);
+	$oScheme->OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute, $sComment);
 
 	if ($oScheme->Get('status') == 'accepted')
 	{
@@ -286,14 +265,22 @@ try
 	$sToken = ReadMandatoryParam('token');
 	switch ($sOperation)
 	{
-		case 'reject':
-		SubmitAnswer($oP, $sToken, false);
+		case 'do_reject':
+		$sComment = trim(utils::ReadParam('comment', '', false, 'raw_data'));
+		if ($sComment == '')
+		{
+			throw new Exception('Empty comment not authorized!');
+		}
+		SubmitAnswer($oP, $sToken, false, $sComment);
 		break;
 
-		case 'approve':
-		SubmitAnswer($oP, $sToken, true);
+		case 'do_approve':
+		$sComment = trim(utils::ReadParam('comment', '', false, 'raw_data'));
+		SubmitAnswer($oP, $sToken, true, $sComment);
 		break;
 		
+		case 'reject': // legacy: emails were created with such an option
+		case 'approve': // legacy: emails were created with such an option
 		default:
 		ShowApprovalForm($oP, $sToken);
 	}
