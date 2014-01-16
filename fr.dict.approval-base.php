@@ -81,6 +81,6 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Ongoing-Title' => 'Approbation en attente',
 	'Approval:Ongoing-Title+' => 'Processus d\'approbation pour l\'élément %1$s',
 	'Approval:Ongoing-FilterMyApprovals' => 'Montrer les éléments pour lesquels mon approbation est requise',
-	'Approval:Ongoing-NothingCurrently' => 'Il y a un processus d\'approbation en cours.',
+	'Approval:Ongoing-NothingCurrently' => 'Il n\'y a aucun processus d\'approbation en cours.',
 ));
 ?>
