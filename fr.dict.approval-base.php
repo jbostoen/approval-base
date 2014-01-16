@@ -36,6 +36,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Tab:StepSumary-KO-Timeout' => 'Rejeté (délai dépassé)',
 	'Approval:Tab:StepSumary-Idle' => 'Pas démarré',
 	'Approval:Tab:StepSumary-Skipped' => 'Passé',
+	'Approval:Tab:End-Abort' => 'Le processus d\'approbation a été contourné par %1$s, le %2$s',
 
 	'Approval:Tab:StepEnd-Condition-FirstReject' => 'Etape conclue au premier rejet, ou si approuvée à 100%',
 	'Approval:Tab:StepEnd-Condition-FirstApprove' => 'Etape conclue à la première approbation, ou si rejetée à 100%',
@@ -51,6 +52,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Action-Approve' => 'Approuver',
 	'Approval:Action-Reject' => 'Rejeter',
 	'Approval:Action-ApproveOrReject' => 'Approuver ou Rejeter',
+	'Approval:Action-Abort' => 'Contourner le process d\'approbation',
 
 	'Approval:Form:Title' => 'Approbation',
 	'Approval:Form:Ref' => 'Processus d\'approbation pour %1$s',
@@ -65,6 +67,8 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Form:StepApproved' => 'Désolé cette phase a été réalisé avec le résultat: Apprové. Le processus d\'approbation continue...',
 	'Approval:Form:StepRejected' => 'Désolé cette phase a été réalisé avec le résultat: Rejecté. Le processus d\'approbation continue...',
 
+	'Approval:Abort:Explain' => 'Vous avez demandé à <b>contourner</b> le processus d\'approbation. Ceci va interrompre le processus, et les personnes interrogée ne pourront plus donner leur avis.',
+
 	'Approval:Form:AnswerRecorded-Continue' => 'Votre réponse a été enregistrée. Le processus d\'approbation continue...',
 	'Approval:Form:AnswerRecorded-Approved' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine avec succès.',
 	'Approval:Form:AnswerRecorded-Rejected' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine en échec.',
@@ -76,6 +80,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 
 	'Approval:Ongoing-Title' => 'Approbation en attente',
 	'Approval:Ongoing-Title+' => 'Processus d\'approbation pour l\'élément %1$s',
+	'Approval:Ongoing-FilterMyApprovals' => 'Montrer les éléments pour lesquels mon approbation est requise',
 	'Approval:Ongoing-NothingCurrently' => 'Il y a un processus d\'approbation en cours.',
 ));
 ?>

@@ -68,6 +68,10 @@ abstract class ApprovalScheme extends DBObject
 		MetaModel::Init_AddAttribute(new AttributeEnum("status", array("allowed_values"=>new ValueSetEnum('ongoing,accepted,rejected'), "sql"=>"status", "default_value"=>"ongoing", "is_null_allowed"=>false, "depends_on"=>array())));
 		MetaModel::Init_AddAttribute(new AttributeString("last_error", array("allowed_values"=>null, "sql"=>"last_error", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
 
+		MetaModel::Init_AddAttribute(new AttributeText("abort_comment", array("allowed_values"=>null, "sql"=>"abort_comment", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
+		MetaModel::Init_AddAttribute(new AttributeExternalKey("abort_user_id", array("targetclass"=>"User", "allowed_values"=>null, "sql"=>"abort_user_id", "is_null_allowed"=>true, "on_target_delete"=>DEL_MANUAL, "depends_on"=>array())));
+		MetaModel::Init_AddAttribute(new AttributeDateTime("abort_date", array("allowed_values"=>null, "sql"=>"abort_date", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
+
 		// Serialized array of steps (ordered)
 		// A step is and array of
 		//		'timeout_sec' => <integer> (0 if no timeout)
@@ -404,9 +408,30 @@ tr.approval-substitutes td div{
 }
 EOF
 		);
-		$sArrow = "<img src=\"$sImgArrow\" style=\"vertical-align:middle;\">";
+
+		$sHtml = '';
+		// Add a header message in case the process has been aborted
+		$iAbortUser = $this->Get('abort_user_id');
+		if ($iAbortUser != 0)
+		{
+			if ($oUser = MetaModel::GetObject('User', $iAbortUser, false))
+			{ 
+				$sUserInfo = $oUser->GetFriendlyName();
+			}
+			else
+			{
+				$sUserInfo = 'User::'.$iAbortUser;
+			}
+			$sAbortInfo = '<p>'.Dict::Format('Approval:Tab:End-Abort', $sUserInfo, $this->Get('abort_date')).'</p>';
+			$sAbortInfo .= '<p><quote>'.str_replace(array("\r\n", "\n", "\r"), "<br/>", htmlentities($this->Get('abort_comment'), ENT_QUOTES, 'UTF-8')).'</quote></p>';
+
+			$sHtml .= "<div id=\"abort_info\" class=\"header_message message_info\" style=\"vertical-align:middle;\">\n";
+			$sHtml .= $sAbortInfo."\n";
+			$sHtml .= "</div>\n";
+		}
 
 		// Build the list of display information
+		$sArrow = "<img src=\"$sImgArrow\" style=\"vertical-align:middle;\">";
 		$aDisplayData = array();
 
 		$aDisplayData[] = array(
@@ -736,16 +761,16 @@ EOF
 			$sDivClass = "approval-step-done-ko";
 			break;
 		}
+
 		$aDisplayData[] = array(
 			'date_html' => null,
 			'time_html' => null,
-			'content_html' => "<div class=\"$sDivClass\"><div style=\"display: inline-block; vertical-align: middle;\">".Dict::S('Approval:Tab:End').": </div>&nbsp;$sFinalStatus</div>\n",
+			'content_html' => "<div id=\"final_result\" class=\"$sDivClass\"><div style=\"display: inline-block; vertical-align: middle;\">".Dict::S('Approval:Tab:End').": </div>&nbsp;$sFinalStatus</div>\n",
 		);
 
 		// Diplay the information
 		//
-		$sHtml = '';
-		$sHtml .= "<table>\n";
+		$sHtml .= "<table id=\"process_status_table\">\n";
 		$sHtml .= "<tr>\n";
 		$sHtml .= "<td colspan=\"2\"></td>\n";
 		foreach($aDisplayData as $aDisplayEvent)
@@ -797,8 +822,34 @@ EOF
 		{
 			$sHtml .= '<p>'.Dict::Format('Approval:Tab:Error', $sLastError).'</p>';
 		}
-
 		return $sHtml;
+	}
+
+	/** Helper to record the end of the process in several cases
+	 * - normal termination
+	 * - abort
+	 */
+	protected function RecordEnd($bApproved)
+	{
+		$this->Set('ended', $this->Now());
+		$this->Set('status', $bApproved ? 'accepted' : 'rejected');
+		$this->DBUpdate();
+
+		if ($oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'), false))
+		{
+			if ($bApproved)
+			{
+				$this->DoApprove($oObject);
+			}
+			else
+			{
+				$this->DoReject($oObject);
+			}
+			if ($oObject->IsModified())
+			{
+				$oObject->DBUpdate();
+			}
+		}
 	}
 
 	/**
@@ -852,22 +903,36 @@ EOF
 		{
 			// Done !
 			//
-			$this->Set('ended', $this->Now());
-			$this->Set('status', $bPrevApproved ? 'accepted' : 'rejected');
-			$this->DBUpdate();
+			$this->RecordEnd($bPrevApproved);
+		}
+	}
 
-			if ($oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'), false))
+	/**
+	 * Overridable helper to store the replier comment	
+	 */
+	protected function RecordComment($sComment, $sIssuerInfo)
+	{
+		$sAttCode = MetaModel::GetModuleSetting('approval-base', 'comment_attcode');
+		if ($sAttCode != '')
+		{
+			if (MetaModel::IsValidAttCode($this->Get('obj_class'), $sAttCode))
 			{
-				if ($bPrevApproved)
+				if ($oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'), false))
 				{
-					$this->DoApprove($oObject);
-				}
-				else
-				{
-					$this->DoReject($oObject);
-				}
-				if ($oObject->IsModified())
-				{
+					$value = $oObject->Get($sAttCode);
+					$oAttDef = MetaModel::GetAttributeDef($this->Get('obj_class'), $sAttCode);
+					if ($oAttDef instanceof AttributeCaseLog)
+					{
+						$value->AddLogEntry($sComment, $sIssuerInfo);
+					}
+					else
+					{
+						// Cumulate into the given (hopefully) text attribute
+						$sDate = date(Dict::S('UI:CaseLog:DateFormat'));
+						$value .= "\n$sDate - ".$sIssuerInfo." :";
+						$value .= "\n".$sComment;
+					}
+					$oObject->Set($sAttCode, $value);
 					$oObject->DBUpdate();
 				}
 			}
@@ -905,32 +970,7 @@ EOF
 				if ($sComment != '')
 				{
 					$aApproverData['comment'] = $sComment;
-
-					$sAttCode = MetaModel::GetModuleSetting('approval-base', 'comment_attcode');
-					if ($sAttCode != '')
-					{
-						if (MetaModel::IsValidAttCode($this->Get('obj_class'), $sAttCode))
-						{
-							if ($oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'), false))
-							{
-								$value = $oObject->Get($sAttCode);
-								$oAttDef = MetaModel::GetAttributeDef($this->Get('obj_class'), $sAttCode);
-								if ($oAttDef instanceof AttributeCaseLog)
-								{
-									$value->AddLogEntry($sComment, $this->GetIssuerInfo($bApprove, $oApprover, $oSubstitute));
-								}
-								else
-								{
-									// Cumulate into the given (hopefully) text attribute
-									$sDate = date(Dict::S('UI:CaseLog:DateFormat'));
-									$value .= "\n$sDate - ".$this->GetIssuerInfo($bApprove, $oApprover, $oSubstitute)." :";
-									$value .= "\n".$sComment;
-								}
-								$oObject->Set($sAttCode, $value);
-								$oObject->DBUpdate();
-							}
-						}
-					}
+					$this->RecordComment($sComment, $this->GetIssuerInfo($bApprove, $oApprover, $oSubstitute));
 				}
 
 				// The answer may be originated by the approver or a substitute
@@ -971,6 +1011,112 @@ EOF
 			$this->StartNextStep();
 		}
 	}
+
+	/**
+	 * Aborting means stopping definitively the ENTIRE process (not only the current step)
+	 */	 
+	public function OnAbort($bApprove, $sComment)
+	{
+		if ($this->Get('status') != 'ongoing')
+		{
+			return;
+		}
+		if ($bApprove)
+		{
+			$sIssuerInfo = Dict::Format('Approval:Approved-By', UserRights::GetUserFriendlyName());
+		}
+		else
+		{
+			$sIssuerInfo = Dict::Format('Approval:Rejected-By', UserRights::GetUserFriendlyName());
+		}
+		$this->RecordComment($sComment, $sIssuerInfo);
+
+		$this->Set('abort_user_id', UserRights::GetUserId());
+		$this->Set('abort_date', $this->Now());
+		$this->Set('abort_comment', $sComment);
+		$this->RecordEnd($bApprove);
+	}
+
+	/**
+	 * Helper to determine if a given user is expected to give her answer
+	 */
+	public function GetContactPassCode($sContactClass, $iContactId)
+	{
+		if ($this->Get('status') != 'ongoing')
+		{
+			return null;
+		}
+
+		$aSteps = $this->GetSteps();
+		$iCurrentStep = $this->Get('current_step');
+		if (!array_key_exists($iCurrentStep, $aSteps))
+		{
+			return null;
+		}
+		$aStepData = $aSteps[$iCurrentStep];
+		foreach($aStepData['approvers'] as &$aApproverData)
+		{
+			if (($aApproverData['class'] == $sContactClass) && ($aApproverData['id'] == $iContactId))
+			{
+				return $aApproverData['passcode'];
+			}
+			if (array_key_exists('forward', $aApproverData))
+			{
+				foreach ($aApproverData['forward'] as $iIndex => $aSubstituteData)
+				{
+					if (($aSubstituteData['class'] == $sContactClass) && ($aSubstituteData['id'] == $iContactId))
+					{
+						return $aSubstituteData['passcode'];
+					}
+				}
+			}
+		}
+		return null;
+	}	  	
+
+	/**
+	 *	Helper to make the URL to approve/reject the ticket
+	 */
+	public function MakeReplyUrl($sContactClass, $iContactId, $bFromGUI = true)
+	{
+		$sPassCode = $this->GetContactPassCode($sContactClass, $iContactId);
+		if (is_null($sPassCode))
+		{
+			$sReplyUrl = null;
+		}
+		else
+		{
+			$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.$sContactClass.'-'.$iContactId.'-'.$sPassCode;
+			$sReplyUrl = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken;
+			if ($bFromGUI)
+			{
+				$sReplyUrl .= '&from=object_details';
+			}
+		}
+		return $sReplyUrl;
+	}
+
+	/**
+	 * Helper to determine if a given user is expected to give her answer
+	 */
+	public function IsActiveApprover($sContactClass, $iContactId)
+	{
+		$sPassCode = $this->GetContactPassCode($sContactClass, $iContactId);
+		return (!is_null($sPassCode));
+	}	  	
+
+	/**
+	 * Helper to make the URL to abort the process
+	 */
+	public function MakeAbortUrl($bFromGUI = true)
+	{
+		$sAbortUrl = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?abort=1&approval_id='.$this->GetKey();
+		if ($bFromGUI)
+		{
+			$sAbortUrl .= '&from=object_details';
+		}
+		return $sAbortUrl;
+	}	 	
 
 	/**
 	 * Helper to compute current state start time - this information is not recorded
@@ -1257,7 +1403,7 @@ EOF
 		}
 	}
 	
-	protected function MakeFormHeader($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
+	protected function MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
 
@@ -1265,12 +1411,13 @@ EOF
 		$oPage->add("<div id=\"form_approval_introduction\">".$sIntroduction."</div>\n");
 	}
 
-	protected function MakeFormInputs($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
+	protected function MakeFormInputs($sFrom, $oPage, $sInjectInForm = '')
 	{
 		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
 		$oPage->add("<form action=\"\" id=\"form_approve\" method=\"post\">\n");
 		$oPage->add("<input type=\"hidden\" id=\"my_operation\" name=\"operation\" value=\"_not_set_\">");
-		$oPage->add("<input type=\"hidden\" name=\"token\" value=\"$sToken\">");
+		$oPage->add($sInjectInForm);
+		$oPage->add("<input type=\"hidden\" name=\"from\" value=\"$sFrom\">");
 	
 		$oPage->add('<div title="'.Dict::S('Approval:Comment-Tooltip').'">'.Dict::S('Approval:Comment-Label').'</div>');
 		$oPage->add("<textarea type=\"textarea\" name=\"comment\" id=\"comment\" class=\"resizable\" cols=\"80\" rows=\"5\"></textarea>");
@@ -1304,7 +1451,7 @@ EOF
 		);
 	}
 
-	protected function MakeFormFooter($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
+	protected function MakeFormFooter($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
 
@@ -1324,11 +1471,21 @@ EOF
 	/**
 	 * Build and output the approval form for a given user
 	 **/	
-	public function DisplayApprovalForm($oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
+	public function DisplayApprovalForm($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
-		$this->MakeFormHeader($oPage, $oApprover, $oObject, $sToken, $oSubstitute);
-		$this->MakeFormInputs($oPage, $oApprover, $oObject, $sToken, $oSubstitute);
-		$this->MakeFormFooter($oPage, $oApprover, $oObject, $sToken, $oSubstitute);
+		$this->MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute);
+		$this->MakeFormInputs($sFrom, $oPage, "<input type=\"hidden\" name=\"token\" value=\"$sToken\">");
+		$this->MakeFormFooter($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute);
+	}
+
+	/**
+	 * Build and output the abort form for the current user
+	 */
+	public function DisplayAbortForm($sFrom, $oPage)
+	{
+		$oPage->p(Dict::S('Approval:Abort:Explain'));
+	
+		$this->MakeFormInputs($sFrom, $oPage, "<input type=\"hidden\" name=\"abort\" value=\"1\"><input type=\"hidden\" name=\"approval_id\" value=\"".$this->GetKey()."\">");
 	}
 
 	/**

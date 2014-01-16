@@ -57,28 +57,60 @@ function DoShowOngoing($oP, $sClass)
 	{
 		throw new Exception("Missing mandatory param 'class'");
 	}
+	$iCurrentUserContact = UserRights::GetContactId();
 
 	$oP->add('<h1>'.Dict::Format('Approval:Ongoing-Title+', MetaModel::GetName($sClass)).'</h1>');
+
+	if ($iCurrentUserContact > 0)
+	{
+		$bFilter = (utils::ReadParam('do_filter_my_approvals', '') == 'on');
+		$sDisabled = '';
+	}
+	else
+	{
+		// No contact is associated to the current user: disable the filtering capability
+		$bFilter = false;
+		$sDisabled = 'DISABLED';
+	}
+	$oAppContext = new ApplicationContext();
+	$sReport = utils::GetAbsoluteUrlAppRoot().'env-'.utils::GetCurrentEnvironment().'/approval-base/report.php';
+	$oP->add('<form id="filter_approvals" action="'.$sReport.'">');
+	$oP->add($oAppContext->GetForForm());
+	$oP->add('<input type="hidden" name="class" value="'.$sClass.'">');
+	$sChecked = $bFilter ? 'CHECKED' : '';
+	$oP->add('<input id="do_filter_my_approvals" name="do_filter_my_approvals" type="checkbox" '.$sChecked.' '.$sDisabled.'>');
+	$oP->add('<label for="do_filter_my_approvals">'.Dict::S('Approval:Ongoing-FilterMyApprovals').'</label>');
+	$oP->add('</form>');
+	$oP->add_ready_script(
+<<<EOF
+$('#do_filter_my_approvals').bind('click', function() {
+	$('form#filter_approvals').submit();
+});
+EOF
+	);
 
 	$aClasses = MetaModel::EnumChildClasses($sClass, ENUM_CHILD_CLASSES_ALL); // Including the specified class itself
 	$sClassList = implode(", ", CMDBSource::Quote($aClasses));
 	$oSearch = DBObjectSearch::FromOQL("SELECT ApprovalScheme WHERE status = 'ongoing' AND obj_class IN ($sClassList)");
-	$aObjList = $oSearch->ToDataArray(array('obj_key'), array('started' => true));
-	$oSet = new DBObjectSet($oSearch, array(), array());
-	if (count($aObjList) == 0)
+	$oSet = new DBObjectSet($oSearch, array('started' => true));
+	$aIds = array();
+	while ($oApproval = $oSet->Fetch())
+	{
+		if (!$bFilter || $oApproval->IsActiveApprover('Person', $iCurrentUserContact))
+		{
+			$aIds[] = $oApproval->Get('obj_key');
+		}
+	}
+
+	if (count($aIds) == 0)
 	{
 		$oP->p(Dict::S('Approval:Ongoing-NothingCurrently'));
 	}
 	else
 	{
-		$aIds = array();
-		foreach ($aObjList as $aRow)
-		{
-			$aIds[] = $aRow['obj_key'];
-		}
 		$sIds = implode(", ", CMDBSource::Quote($aIds));
 		$oObjSearch = DBObjectSearch::FromOQL("SELECT $sClass WHERE id IN ($sIds)");
-
+	
 		$oBlock = new DisplayBlock($oObjSearch, 'list', false);
 		$oBlock->Display($oP, 'ongoing_appr', array('menu' => false));
 	}
@@ -94,9 +126,7 @@ try
 	require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 	LoginWebPage::DoLogin(); // Check user rights and prompt if needed
 	
-	//$oP = new iTopWebPage(Dict::S('Approval:Ongoing-Title'));
-
-	$oP = new ApprovalWebPage(Dict::S('Approval:Ongoing-Title'));
+	$oP = new iTopWebPage(Dict::S('Approval:Ongoing-Title'));
 	$oP->set_base(utils::GetAbsoluteUrlAppRoot().'pages/');
 
 	$sOperation = utils::ReadParam('operation', '');

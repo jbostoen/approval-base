@@ -36,6 +36,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Tab:StepSumary-KO-Timeout' => 'Rejected (timeout)',
 	'Approval:Tab:StepSumary-Idle' => 'Not started',
 	'Approval:Tab:StepSumary-Skipped' => 'Skipped',
+	'Approval:Tab:End-Abort' => 'The approval process has been bypassed by %1$s at %2$s',
 
 	'Approval:Tab:StepEnd-Condition-FirstReject' => 'This step finishes on the first rejection, or if 100% approved',
 	'Approval:Tab:StepEnd-Condition-FirstApprove' => 'This step finishes on the first approval, or if 100% rejected',
@@ -51,6 +52,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Action-Approve' => 'Approve',
 	'Approval:Action-Reject' => 'Reject',
 	'Approval:Action-ApproveOrReject' => 'Approve or Reject',
+	'Approval:Action-Abort' => 'Bypass the approval process',
 
 	'Approval:Form:Title' => 'Approval',
 	'Approval:Form:Ref' => 'Approval process for %1$s',
@@ -65,6 +67,8 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Form:StepApproved' => 'Sorry, this phase has been completed with result: Approved. The approval process is continuing...',
 	'Approval:Form:StepRejected' => 'Sorry, this phase has been completed with result: Rejected. The approval process is continuing...',
 
+	'Approval:Abort:Explain' => 'You have requested to <b>bypass</b> the approval process. This will stop the process and none of the approvers will be allowed to give their answer anymore.',
+
 	'Approval:Form:AnswerRecorded-Continue' => 'Your answer has been recorded. The approval process is continuing.',
 	'Approval:Form:AnswerRecorded-Approved' => 'Your answer has been recorded: the approval is now complete with success.',
 	'Approval:Form:AnswerRecorded-Rejected' => 'Your answer has been recorded: the approval is now complete with failure.',
@@ -76,6 +80,7 @@ Dict::Add('EN US', 'English', 'English', array(
 
 	'Approval:Ongoing-Title' => 'Ongoing approvals',
 	'Approval:Ongoing-Title+' => 'Approval processes for objects of class %1$s',
+	'Approval:Ongoing-FilterMyApprovals' => 'Show items for which my approval is being required',
 	'Approval:Ongoing-NothingCurrently' => 'There is no ongoing approval.',
 ));
 ?>

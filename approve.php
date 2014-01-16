@@ -44,6 +44,35 @@ function ReadMandatoryParam($sParam)
 
 
 /**
+ * Set the stage and that the approval is ongoing
+ */
+function CheckApprovalSchemeAndShowTitle($oP, $iSchemeId)
+{
+	$oScheme = MetaModel::GetObject('ApprovalScheme', $iSchemeId, false);
+	if (!$oScheme)
+	{
+		$oP->p(Dict::S('Approval:Form:ObjectDeleted'));
+		throw new QuitException();
+	}
+
+	$oObject = MetaModel::GetObject($oScheme->Get('obj_class'), $oScheme->Get('obj_key'));
+	$oP->add('<h2>'.Dict::Format('Approval:Form:Ref', $oObject->GetHyperLink()).'</h2>');
+
+	if ($oScheme->Get('status') == 'accepted')
+	{
+		$oP->p(Dict::S('Approval:Form:AlreadyApproved'));
+		throw new QuitException();
+	}
+	elseif ($oScheme->Get('status') == 'rejected')
+	{
+		$oP->p(Dict::S('Approval:Form:AlreadyRejected'));
+		throw new QuitException();
+	}
+
+	return array($oScheme, $oObject);
+}
+
+/**
  * Interpret the token to build the page arguments
  * Validate that the arguments are consistent altogether
  */
@@ -62,13 +91,6 @@ function GetContext($oP, $sToken)
 	$iApproverId = $aToken[3];
 	$sPassCode = $aToken[4];
 
-	$oScheme = MetaModel::GetObject('ApprovalScheme', $iSchemeId, false);
-	if (!$oScheme)
-	{
-		$oP->p(Dict::S('Approval:Form:ObjectDeleted'));
-		throw new QuitException();
-	}
-
 	$oApprover = MetaModel::GetObject($sApproverClass, $iApproverId, false);
 	if (!$oApprover)
 	{
@@ -76,20 +98,7 @@ function GetContext($oP, $sToken)
 		throw new QuitException();
 	}
 
-	$oObject = MetaModel::GetObject($oScheme->Get('obj_class'), $oScheme->Get('obj_key'));
-	$oP->add('<h2>'.Dict::Format('Approval:Form:Ref', $oObject->GetHyperLink()).'</h2>');
-
-	if ($oScheme->Get('status') == 'accepted')
-	{
-		$oP->p(Dict::S('Approval:Form:AlreadyApproved'));
-		throw new QuitException();
-	}
-	elseif ($oScheme->Get('status') == 'rejected')
-	{
-		$oP->p(Dict::S('Approval:Form:AlreadyRejected'));
-		throw new QuitException();
-	}
-
+	list($oScheme, $oObject) = CheckApprovalSchemeAndShowTitle($oP, $iSchemeId);
 	$aSteps = $oScheme->GetSteps();
 
 	if ($iStep < $oScheme->Get('current_step'))
@@ -199,18 +208,44 @@ function GetContext($oP, $sToken)
 }
 
 
-
-function ShowApprovalForm($oP, $sToken)
+function ShowApprovalForm($sFrom, $oP, $sToken)
 {
 	list($oScheme, $iStep, $oApprover, $oObject, $oSubstitute) = GetContext($oP, $sToken);
 
-	$oScheme->DisplayApprovalForm($oP, $oApprover, $oObject, $sToken, $oSubstitute);
+	$oScheme->DisplayApprovalForm($sFrom, $oP, $oApprover, $oObject, $sToken, $oSubstitute);
 }
 
-function SubmitAnswer($oP, $sToken, $bApprove, $sComment = '')
+
+function AfterSubmit($oP, $oScheme, $bReturnToObjectDetails)
+{
+	if ($oScheme->Get('status') == 'accepted')
+	{
+		$sOutcome = Dict::S('Approval:Form:AnswerRecorded-Approved');
+	}
+	elseif ($oScheme->Get('status') == 'rejected')
+	{
+		$sOutcome = Dict::S('Approval:Form:AnswerRecorded-Rejected');
+	}
+	else
+	{
+		$sOutcome = Dict::S('Approval:Form:AnswerRecorded-Continue');
+	}
+	$oP->p($sOutcome);
+
+	if ($bReturnToObjectDetails)
+	{
+		cmdbAbstractObject::SetSessionMessage($oScheme->Get('obj_class'), $oScheme->Get('obj_key'), 'approval-result', $sOutcome, 'info', 0, true /* must not exist */);
+		$oAppContext = new ApplicationContext();
+		$oP->add_header('Location: '.utils::GetAbsoluteUrlAppRoot().'pages/UI.php?operation=details&class='.$oScheme->Get('obj_class').'&id='.$oScheme->Get('obj_key').'&'.$oAppContext->GetForLink());
+	}
+}
+
+
+function SubmitAnswer($sFrom, $oP, $sToken, $bApprove, $sComment)
 {
 	list($oScheme, $iStep, $oApprover, $oObject, $oSubstitute) = GetContext($oP, $sToken);
 
+	// As the current user is not necessarily logged in, keep track of her name
 	$sTrackInfo = $oScheme->GetIssuerInfo($bApprove, $oApprover, $oSubstitute);
 	CMDBObject::SetTrackInfo($sTrackInfo);
 
@@ -218,18 +253,37 @@ function SubmitAnswer($oP, $sToken, $bApprove, $sComment = '')
 	//
 	$oScheme->OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute, $sComment);
 
-	if ($oScheme->Get('status') == 'accepted')
+	$bReturnToObjectDetails = ($sFrom == 'object_details');
+	AfterSubmit($oP, $oScheme, $bReturnToObjectDetails);
+}
+
+
+function ShowAbortForm($sFrom, $oP, $iApprovalId)
+{
+	if (!UserRights::IsAdministrator())
 	{
-		$oP->p(Dict::S('Approval:Form:AnswerRecorded-Approved'));
+		throw new Exception("Only administrators are allowed to abort an approval process");
 	}
-	elseif ($oScheme->Get('status') == 'rejected')
+
+	list($oScheme, $oObject) = CheckApprovalSchemeAndShowTitle($oP, $iApprovalId);
+
+	$oScheme->DisplayAbortForm($sFrom, $oP);
+}
+
+
+function SubmitAbort($sFrom, $oP, $iApprovalId, $bApprove, $sComment)
+{
+	if (!UserRights::IsAdministrator())
 	{
-		$oP->p(Dict::S('Approval:Form:AnswerRecorded-Rejected'));
+		throw new Exception("Only administrators are allowed to abort an approval process");
 	}
-	else
-	{
-		$oP->p(Dict::S('Approval:Form:AnswerRecorded-Continue'));
-	}
+
+	list($oScheme, $oObject) = CheckApprovalSchemeAndShowTitle($oP, $iApprovalId);
+
+	$oScheme->OnAbort($bApprove, $sComment);
+
+	$bReturnToObjectDetails = ($sFrom == 'object_details');
+	AfterSubmit($oP, $oScheme, $bReturnToObjectDetails);
 }
 
 /////////////////////////////
@@ -241,48 +295,76 @@ function SubmitAnswer($oP, $sToken, $bApprove, $sComment = '')
 try
 {
 	require_once(APPROOT.'/application/startup.inc.php');
-	require_once(MODULESROOT.'approval-base/approvalwebpage.class.inc.php');
 	$sOperation = utils::ReadParam('operation', '');
+	$sFrom = utils::ReadParam('from', '');
+	$bAbort = (utils::ReadParam('abort', '') == 1);
 	
-//	$oUserOrg = GetUserOrg();
-	$sCSSFileSuffix = 'approval-base/approve.css';
-	if (@file_exists(MODULESROOT.$sCSSFileSuffix))
+	if ($sFrom == 'object_details')
 	{
-//		$oP = new QuizzWebPage(Dict::S('Survey-Title'), $sCSSFileSuffix);
-//		$oP->add($sCSSFileSuffix);
+		require_once(APPROOT.'/application/loginwebpage.class.inc.php');
+		LoginWebPage::DoLogin(); // Check user rights and prompt if needed
+
+		require_once(APPROOT.'application/itopwebpage.class.inc.php');
+		$oP = new iTopWebPage(Dict::S('Approval:Form:Title'));
+		$sModule = utils::GetAbsoluteUrlModulesRoot().'approval-base';
+		$oP->add_style(
+<<<EOF
+#approval-button {
+    background: url("$sModule/approve.png") no-repeat scroll 10px center rgba(0, 0, 0, 0);
+}
+#rejection-button {
+    background: url("$sModule/reject.png") no-repeat scroll 10px center rgba(0, 0, 0, 0);
+}
+#approval-button, #rejection-button {
+    margin: 0 10px 10px;
+    padding: 5px 10px 5px 35px;
+}
+EOF
+		);
 	}
 	else
 	{
-//	$oP = new QuizzWebPage(Dict::S('Survey-Title'));
+		require_once(MODULESROOT.'approval-base/approvalwebpage.class.inc.php');
+		$oP = new ApprovalWebPage(Dict::S('Approval:Form:Title'));
 	}
-	$oP = new ApprovalWebPage(Dict::S('Approval:Form:Title'));
 	$oP->set_base(utils::GetAbsoluteUrlAppRoot().'pages/');
 
-	$oP->add("<style>
-</style>\n");
-
-
-	$sToken = ReadMandatoryParam('token');
 	switch ($sOperation)
 	{
+		case 'do_approve':
 		case 'do_reject':
+		$bApprove = ($sOperation == 'do_approve');
 		$sComment = trim(utils::ReadParam('comment', '', false, 'raw_data'));
-		if ($sComment == '')
+		if (!$bApprove && ($sComment == ''))
 		{
-			throw new Exception('Empty comment not authorized!');
+			throw new Exception('Empty comment not authorized!'); // bug: should be protected in the form
 		}
-		SubmitAnswer($oP, $sToken, false, $sComment);
+		if ($bAbort)
+		{
+			$iApprovalId = ReadMandatoryParam('approval_id');
+			SubmitAbort($sFrom, $oP, $iApprovalId, $bApprove, $sComment);
+		}
+		else
+		{
+			$sToken = ReadMandatoryParam('token');
+			SubmitAnswer($sFrom, $oP, $sToken, $bApprove, $sComment);
+		}
 		break;
 
-		case 'do_approve':
-		$sComment = trim(utils::ReadParam('comment', '', false, 'raw_data'));
-		SubmitAnswer($oP, $sToken, true, $sComment);
-		break;
-		
 		case 'reject': // legacy: emails were created with such an option
 		case 'approve': // legacy: emails were created with such an option
 		default:
-		ShowApprovalForm($oP, $sToken);
+		if ($bAbort)
+		{
+			$iApprovalId = ReadMandatoryParam('approval_id');
+			ShowAbortForm($sFrom, $oP, $iApprovalId);
+		}
+		else
+		{
+			$sToken = ReadMandatoryParam('token');
+			ShowApprovalForm($sFrom, $oP, $sToken);
+		}
+
 	}
 
 	$oP->output();
