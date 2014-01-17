@@ -260,12 +260,11 @@ function SubmitAnswer($sFrom, $oP, $sToken, $bApprove, $sComment)
 
 function ShowAbortForm($sFrom, $oP, $iApprovalId)
 {
-	if (!UserRights::IsAdministrator())
+	list($oScheme, $oObject) = CheckApprovalSchemeAndShowTitle($oP, $iApprovalId);
+	if (!$oScheme->IsAllowedToAbort())
 	{
 		throw new Exception("Only administrators are allowed to abort an approval process");
 	}
-
-	list($oScheme, $oObject) = CheckApprovalSchemeAndShowTitle($oP, $iApprovalId);
 
 	$oScheme->DisplayAbortForm($sFrom, $oP);
 }
@@ -273,12 +272,11 @@ function ShowAbortForm($sFrom, $oP, $iApprovalId)
 
 function SubmitAbort($sFrom, $oP, $iApprovalId, $bApprove, $sComment)
 {
-	if (!UserRights::IsAdministrator())
+	list($oScheme, $oObject) = CheckApprovalSchemeAndShowTitle($oP, $iApprovalId);
+	if (!$oScheme->IsAllowedToAbort())
 	{
 		throw new Exception("Only administrators are allowed to abort an approval process");
 	}
-
-	list($oScheme, $oObject) = CheckApprovalSchemeAndShowTitle($oP, $iApprovalId);
 
 	$oScheme->OnAbort($bApprove, $sComment);
 

@@ -1569,6 +1569,58 @@ EOF
 	{
 		return false;
 	}
+
+	/**
+	 * Overridable to implement the abort feature
+	 * @param oUser (implicitely the current user if null)	 
+	 * Return true if the given user is allowed to abort	 
+	 */	
+	public function IsAllowedToAbort($oUser = null)
+	{
+		return false;
+	}
+
+	static public function GetPopMenuItems($iMenuId, $param)
+	{
+		$aRet = array();
+		if ($iMenuId == iPopupMenuExtension::MENU_OBJDETAILS_ACTIONS)
+		{
+			$oObject = $param;
+
+
+			// Filter out the object out of scope of the approval processes
+			if (get_class($oObject) == 'UserRequest')
+			{
+				// Is there an ongoing approval process for the object ?
+				$oApprovSearch = DBObjectSearch::FromOQL('SELECT ApprovalScheme WHERE status = \'ongoing\' AND obj_class = :obj_class AND obj_key = :obj_key');
+				$oApprovSearch->AllowAllData();
+				$oApprovals = new DBObjectSet($oApprovSearch, array(), array('obj_class' => get_class($oObject), 'obj_key' => $oObject->GetKey()));
+				if ($oApprovals->Count() > 0)
+				{
+					$oApproval = $oApprovals->Fetch();
+
+					// Is the current user associated to a contact ?
+					$iContactId = UserRights::GetContactId();
+					if ($iContactId > 0)
+					{
+						// Does the approval concern the current user?
+						$sReplyUrl = $oApproval->MakeReplyUrl('Person', $iContactId);
+						if (!is_null($sReplyUrl))
+						{
+							// Here we are: add a menu to approve or reject the request
+							$aRet[] = new URLPopupMenuItem('approval_reply_url', Dict::S('Approval:Action-ApproveOrReject'), $sReplyUrl);
+						}
+					}
+					if ($oApproval->IsAllowedToAbort())
+					{
+						$sReplyUrl = $oApproval->MakeAbortUrl();
+						$aRet[] = new URLPopupMenuItem('approval_abort_url', Dict::S('Approval:Action-Abort'), $sReplyUrl);
+					}
+				}
+			}
+		}
+		return $aRet;
+	}
 }
 
 
