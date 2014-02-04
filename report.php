@@ -23,7 +23,8 @@
  * @license     http://www.opensource.org/licenses/gpl-3.0.html LGPL
  */
 
-require_once('../../approot.inc.php');
+if (!defined('__DIR__')) define('__DIR__', dirname(__FILE__));
+require_once(__DIR__.'/../../approot.inc.php');
 require_once(APPROOT.'/application/application.inc.php');
 require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 
@@ -73,8 +74,8 @@ function DoShowOngoing($oP, $sClass)
 		$sDisabled = 'DISABLED';
 	}
 	$oAppContext = new ApplicationContext();
-	$sReport = utils::GetAbsoluteUrlAppRoot().'env-'.utils::GetCurrentEnvironment().'/approval-base/report.php';
-	$oP->add('<form id="filter_approvals" action="'.$sReport.'">');
+	$sReport = utils::GetAbsoluteUrlModulePage('approval-base', 'report.php');
+	$oP->add('<form id="filter_approvals" action="'.$sReport.'" method="post">');
 	$oP->add($oAppContext->GetForForm());
 	$oP->add('<input type="hidden" name="class" value="'.$sClass.'">');
 	$sChecked = $bFilter ? 'CHECKED' : '';
@@ -127,7 +128,6 @@ try
 	LoginWebPage::DoLogin(); // Check user rights and prompt if needed
 	
 	$oP = new iTopWebPage(Dict::S('Approval:Ongoing-Title'));
-	$oP->set_base(utils::GetAbsoluteUrlAppRoot().'pages/');
 
 	$sOperation = utils::ReadParam('operation', '');
 	$sClass = utils::ReadParam('class', null);
