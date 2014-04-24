@@ -1384,22 +1384,32 @@ EOF
 		$oEmail = new EMail();
 		$oEmail->SetSubject($sTitle);
 		$oEmail->SetBody($sBody);
-		$oEmail->SetRecipientTO($this->GetApproverEmailAddress($oToPerson));
-		$oEmail->SetRecipientFrom($this->GetEmailSender($oToPerson, $oObj));
-		$oEmail->SetRecipientReplyTo($this->GetEmailReplyTo($oToPerson, $oObj));
-		$iRes = $oEmail->Send($aIssues);
-		switch ($iRes)
+		try
 		{
-			case EMAIL_SEND_OK:
-				break;
+			$oEmail->SetRecipientTO($this->GetApproverEmailAddress($oToPerson));
+			$oEmail->SetRecipientFrom($this->GetEmailSender($oToPerson, $oObj));
+			$oEmail->SetRecipientReplyTo($this->GetEmailReplyTo($oToPerson, $oObj));
 
-			case EMAIL_SEND_PENDING:
-				break;
-
-			case EMAIL_SEND_ERROR:
-				$sErrors = implode(', ', $aIssues);
-				$this->Set('last_error', Dict::Format('Approval:Error:Email', $sErrors));
-				break;
+			$iRes = $oEmail->Send($aIssues);
+			switch ($iRes)
+			{
+				case EMAIL_SEND_OK:
+					break;
+	
+				case EMAIL_SEND_PENDING:
+					break;
+	
+				case EMAIL_SEND_ERROR:
+					$sErrors = implode(', ', $aIssues);
+					$this->Set('last_error', Dict::Format('Approval:Error:Email', $sErrors));
+					break;
+			}
+		}
+		catch (Exception $e)
+		{
+			$sMessage = Dict::Format('Approval:Error:Email', $e->getMessage());
+			cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'approval-process-exec', Dict::Format('Approval:Tab:Error', $sMessage), 'error', 0);
+			$this->Set('last_error', $sMessage);
 		}
 	}
 	
