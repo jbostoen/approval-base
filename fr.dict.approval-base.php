@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2012 Combodo SARL
+// Copyright (C) 2012-2014 Combodo SARL
 //
 //   This program is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -82,5 +82,11 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Ongoing-Title+' => 'Processus d\'approbation pour l\'élément %1$s',
 	'Approval:Ongoing-FilterMyApprovals' => 'Montrer les éléments pour lesquels mon approbation est requise',
 	'Approval:Ongoing-NothingCurrently' => 'Il n\'y a aucun processus d\'approbation en cours.',
+
+	'Approval:Remind-Btn' => 'Envoyer une relance...',
+	'Approval:Remind-DlgTitle' => 'Envoyer une relance',
+	'Approval:Remind-DlgBody' => 'Un email de relance va être envoyé aux destinataires suivants:',
+	'Approval:ReminderDone' => 'La relance a été faite pour %1$d contacts.',
+	'Approval:Reminder-Subject' => '%1$s (rappel)',
 ));
 ?>

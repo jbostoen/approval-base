@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2012 Combodo SARL
+// Copyright (C) 2012-2014 Combodo SARL
 //
 //   This program is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -82,5 +82,11 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Ongoing-Title+' => 'Approval processes for objects of class %1$s',
 	'Approval:Ongoing-FilterMyApprovals' => 'Show items for which my approval is being required',
 	'Approval:Ongoing-NothingCurrently' => 'There is no ongoing approval.',
+
+	'Approval:Remind-Btn' => 'Send a reminder...',
+	'Approval:Remind-DlgTitle' => 'Send a reminder',
+	'Approval:Remind-DlgBody' => 'The following contacts will be notified again:',
+	'Approval:ReminderDone' => 'A reminder has been sent to %1$d persons.',
+	'Approval:Reminder-Subject' => '%1$s (reminder)',
 ));
 ?>

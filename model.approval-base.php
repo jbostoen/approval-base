@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2012-2013 Combodo SARL
+// Copyright (C) 2012-2014 Combodo SARL
 //
 //   This program is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -72,6 +72,8 @@ abstract class ApprovalScheme extends DBObject
 		MetaModel::Init_AddAttribute(new AttributeExternalKey("abort_user_id", array("targetclass"=>"User", "allowed_values"=>null, "sql"=>"abort_user_id", "is_null_allowed"=>true, "on_target_delete"=>DEL_MANUAL, "depends_on"=>array())));
 		MetaModel::Init_AddAttribute(new AttributeDateTime("abort_date", array("allowed_values"=>null, "sql"=>"abort_date", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
 
+		MetaModel::Init_AddAttribute(new AttributeString("label", array("allowed_values"=>null, "sql"=>"label", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
+
 		// Serialized array of steps (ordered)
 		// A step is and array of
 		//		'timeout_sec' => <integer> (0 if no timeout)
@@ -117,6 +119,11 @@ abstract class ApprovalScheme extends DBObject
 	 * @return string The subject in pure text
 	 */	 	
 	abstract public function GetEmailSubject($sContactClass, $iContactId);
+
+	public function GetReminderSubject($sContactClass, $iContactId)
+	{
+		return Dict::Format('Approval:Reminder-Subject', $this->GetEmailSubject($sContactClass, $iContactId));
+	}
 
 	/**
 	 * Called when the email is being created for a given approver
@@ -255,6 +262,7 @@ abstract class ApprovalScheme extends DBObject
 	 * @param array aContact An array of array('class' => ..., 'id' => ...)
 	 * @param integer $iTimeoutSec The timeout duration if (0 to disable the timeout feature)
 	 * @param boolean $bApproveOnTimeout Set to true to approve in case of timeout for the current step
+	 * @param integer $iExitCondition EXIT_ON_... _FIRST_REJECT, _FIRST_APPROVE, _FIRST_REPLY defaults to the legacy behavior
 	 * @return void
 	 */
 	public function AddStep($aContacts, $iTimeoutSec = 0, $bApproveOnTimeout = true, $iExitCondition = self::EXIT_ON_FIRST_REJECT)
@@ -310,12 +318,73 @@ abstract class ApprovalScheme extends DBObject
 	}
 
 	/**
-	 * Display the status as an additional tab in the given page
+	 * Helper to build the button and associated dialog, if relevant, enabled, etc.
 	 */	 	
-	public function DisplayStatus($oPage)
+	protected function GetReminderButton($oPage, $aStepData)
 	{
-		$oPage->SetCurrentTab(Dict::S('Approval:Tab:Title'));
-		$oPage->p($this->GetDisplayStatus($oPage));
+		$sRet = '';
+		if (MetaModel::GetModuleSetting('approval-base', 'enable_reminder', true))
+		{
+			if (($aStepData['status'] == 'ongoing') && ($this->Get('status') == 'ongoing'))
+			{
+				$aAwaited = $this->GetAwaitedReplies();
+				if (count($aAwaited) > 0)
+				{
+					$aReminders = array();
+					foreach ($aAwaited as $aData)
+					{
+						$oTarget = MetaModel::GetObject($aData['class'], $aData['id'], false);
+						if ($oTarget)
+						{
+							$aReminders[] = $oTarget->Get('friendlyname').' ('.$this->GetApproverEmailAddress($oTarget).')';
+						}
+					}
+					$sRet = '<button id="send_reminder" >'.Dict::S('Approval:Remind-Btn').'</button>';
+					$sRet .= '<div id="send_reminder_dlg">'.Dict::S('Approval:Remind-DlgBody').'<ul><li>'.implode('</li><li>', $aReminders).'</li></ul></div>';
+					$sDialogTitle = addslashes(Dict::S('Approval:Remind-DlgTitle'));
+					$sOkButtonLabel = addslashes(Dict::S('UI:Button:Ok'));
+					$sCancelButtonLabel = addslashes(Dict::S('UI:Button:Cancel'));
+					$iApproval = $this->GetKey();
+					$iCurrentStep = $this->Get('current_step');
+					$oPage->add_ready_script(
+<<<EOF
+$('#send_reminder_dlg').dialog({
+	width: 400,
+	modal: true,
+	title: '$sDialogTitle',
+	autoOpen: false,
+	buttons: [
+	{ text: '$sOkButtonLabel', click: function(){
+		var me = $(this);
+		var oDialog = $(this).closest('.ui-dialog');
+		var oParams = {
+			'operation': 'send_reminder',
+			'approval_id': $iApproval,
+			'step': $iCurrentStep,
+		};
+		oDialog.block();
+		$.post(GetAbsoluteUrlModulesRoot()+'approval-base/ajax.approval.php', oParams, function(data) {
+			me.dialog( "close" );
+			oDialog.unblock();
+		});
+	} },
+	{ text: '$sCancelButtonLabel', click: function() {
+		$(this).dialog( "close" );
+	} }
+	],
+});
+
+$('#send_reminder').bind('click', function () {
+	$('#send_reminder_dlg')
+		.dialog('open');
+	return false;
+});
+EOF
+					);
+				}
+			}
+		}
+		return $sRet;
 	}
 
 	/**
@@ -405,6 +474,10 @@ tr.approval-substitutes td div{
 }
 .approval-substitutes.closed {
 	display: none;
+}
+#send_reminder {
+	margin-top: 5px;
+	width: 100%;
 }
 EOF
 		);
@@ -690,6 +763,16 @@ EOF
 				}
 				$sStepHtml .= '</tr>';
 			}
+
+			// Add a button to send a reminder for the current step (if relevant)
+			//
+			$sReminderHtml = $this->GetReminderButton($oPage, $aStepData);
+			if (strlen($sReminderHtml) > 0)
+			{
+				$sStepHtml .= '<tr>';
+				$sStepHtml .= '<td colspan="2" align="center">'.$sReminderHtml.'</td>';
+				$sStepHtml .= '</tr>';
+			}
 			$sStepHtml .= '</table>';
 
 			$aDisplayData[] = array(
@@ -822,6 +905,7 @@ EOF
 		{
 			$sHtml .= '<p>'.Dict::Format('Approval:Tab:Error', $sLastError).'</p>';
 		}
+
 		return $sHtml;
 	}
 
@@ -1285,6 +1369,61 @@ EOF
 	}
 
 	/**
+	 * Helper to list the expected replies, and send a reminder
+	 */
+	public function GetAwaitedReplies()
+	{
+		if ($this->Get('status') != 'ongoing')
+		{
+			return array();
+		}
+		$iCurrentStep = $this->Get('current_step');
+
+		$aSteps = $this->GetSteps();
+		if (!array_key_exists($iCurrentStep, $aSteps))
+		{
+			return array();
+		}
+		$aStepData = &$aSteps[$iCurrentStep];
+		if ($aStepData['status'] != 'ongoing')
+		{
+			return array();
+		}
+
+		$aRecipients = array();
+		foreach($aStepData['approvers'] as $aApproverData)
+		{
+			// Skip this approver if the answer has been given (by the approver or any of the forwards)
+			if (array_key_exists('approval', $aApproverData)) continue;
+			$aRecipients[] = array(
+				'class' => $aApproverData['class'],
+				'id' => $aApproverData['id'],
+				'passcode' => $aApproverData['passcode']
+			);
+
+			if (array_key_exists('forward', $aApproverData))
+			{
+				foreach ($aApproverData['forward'] as $aForwardData)
+				{
+					if (array_key_exists('sent_time', $aForwardData))
+					{
+						$aRecipients[] = array(
+							'class' => $aForwardData['class'],
+							'id' => $aForwardData['id'],
+							'passcode' => $aForwardData['passcode'],
+							'substitute_to' => array(
+								'class' => $aApproverData['class'],
+								'id' => $aApproverData['id'],
+							)
+						);
+					}
+				}
+			}
+		}
+		return $aRecipients;
+	}
+		 	
+	/**
 	 * Legacy behavior (defaults to this value if the flag is omitted).
 	 * Terminate the step with failure as soon as one rejection occurs.
 	 * The step successes if everybody approves.
@@ -1357,17 +1496,8 @@ EOF
 		}
 	}
 
-	/**
-	 * Build and send the message for a given approver (can be a forwarded approval request)
-	 */	 	
-	public function SendApprovalInvitation($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null)
+	protected function SendEmail($sTitle, $sIntroduction, $sToken, $sTo, $sFrom, $sReplyTo)
 	{
-		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
-
-		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
-
 		$sReplyUrl = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken;
 
 		$sBody = '<html>';
@@ -1386,9 +1516,9 @@ EOF
 		$oEmail->SetBody($sBody);
 		try
 		{
-			$oEmail->SetRecipientTO($this->GetApproverEmailAddress($oToPerson));
-			$oEmail->SetRecipientFrom($this->GetEmailSender($oToPerson, $oObj));
-			$oEmail->SetRecipientReplyTo($this->GetEmailReplyTo($oToPerson, $oObj));
+			$oEmail->SetRecipientTO($sTo);
+			$oEmail->SetRecipientFrom($sFrom);
+			$oEmail->SetRecipientReplyTo($sReplyTo);
 
 			$iRes = $oEmail->Send($aIssues);
 			switch ($iRes)
@@ -1412,7 +1542,49 @@ EOF
 			$this->Set('last_error', $sMessage);
 		}
 	}
+
+	/**
+	 * Build and send the message for a given approver (can be a forwarded approval request)
+	 */	 	
+	public function SendApprovalInvitation($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null)
+	{
+		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
+
+		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
+		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
+		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
+
+		$this->SendEmail(
+			$sTitle,
+			$sIntroduction,
+			$sToken,
+			$this->GetApproverEmailAddress($oToPerson),
+			$this->GetEmailSender($oToPerson, $oObj),
+			$this->GetEmailReplyTo($oToPerson, $oObj)
+		);
+	}
 	
+	/**
+	 * Build and send the REMINDER for a given approver (can be a forwarded approval request)
+	 */	 	
+	public function SendApprovalReminder($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null)
+	{
+		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
+
+		$sTitle = MetaModel::ApplyParams($this->GetReminderSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
+		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
+		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
+
+		$this->SendEmail(
+			$sTitle,
+			$sIntroduction,
+			$sToken,
+			$this->GetApproverEmailAddress($oToPerson),
+			$this->GetEmailSender($oToPerson, $oObj),
+			$this->GetEmailReplyTo($oToPerson, $oObj)
+		);
+	}
+
 	protected function MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
@@ -1656,13 +1828,73 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 			return;
 		}
 
+		$oPage->add_style(
+<<<EOF
+div.approval-exec-label {
+	margin-top: 15px;
+	margin-bottom: 5px;
+	font-weight: bolder;
+}
+EOF
+		);
+
+		$bLastExecFirst = MetaModel::GetModuleSetting('approval-base', 'list_last_first', false);
+
 		$oApprovSearch = DBObjectSearch::FromOQL('SELECT ApprovalScheme WHERE obj_class = :obj_class AND obj_key = :obj_key');
 		$oApprovSearch->AllowAllData();
-		// Get the ongoing approval
-		$oApprovals = new DBObjectSet($oApprovSearch, array('started' => false), array('obj_class' => $sClass, 'obj_key' => $oObject->GetKey()));
-		if($oScheme = $oApprovals->Fetch())
+		// Get the approvals (for the current object)
+		$oApprovals = new DBObjectSet($oApprovSearch, array('started' => !$bLastExecFirst), array('obj_class' => $sClass, 'obj_key' => $oObject->GetKey()));
+
+		if ($oApprovals->Count() > 1)
 		{
-			$oScheme->DisplayStatus($oPage);
+			$oPage->add_style(
+<<<EOF
+div.approval-exec-label {
+	background: url(../images/minus.gif) no-repeat left;
+	cursor: pointer;	
+	padding-left: 15px;
+}
+div.approval-exec-label.status-closed {
+	background: url(../images/plus.gif) no-repeat left;
+}
+div.approval-exec-status {
+	border-left: 1px dashed;
+	margin-left: 5px;
+}
+EOF
+			);
+		}
+
+		$oPage->SetCurrentTab(Dict::S('Approval:Tab:Title'));
+		while ($oScheme = $oApprovals->Fetch())
+		{
+			$sId = 'approval-exec-'.$oScheme->GetKey();
+			$sLabel = trim($oScheme->Get('label'));
+			if ((strlen($sLabel) == 0) && ($oApprovals->Count() > 1))
+			{
+				// A label is mandatory to have a place to click to toggle, let's give a default one
+				$oStarted = new DateTime($oScheme->Get('started'));
+				$sLabel = $oStarted->format('Y-m-d H:i');
+			}
+			if (strlen($sLabel) > 0)
+			{
+				$oPage->add('<div id="'.$sId.'" class="approval-exec-label">'.$sLabel.'</div>');
+			}
+
+			$oPage->add('<div id="'.$sId.'_status" class="approval-exec-status">');
+			$oPage->add($oScheme->GetDisplayStatus($oPage));
+			$oPage->add('</div>');
+
+			if ($oApprovals->Count() > 1)
+			{
+				$oPage->add_ready_script("$('#{$sId}').click( function() { $('#{$sId}_status').slideToggle(); } );\n");
+				$oPage->add_ready_script("$('#{$sId}').click( function() { $(this).toggleClass('status-closed'); } );\n");
+				if ($oScheme->Get('status') != 'ongoing')
+				{
+					$oPage->add_ready_script("$('#{$sId}_status').slideToggle();");
+					$oPage->add_ready_script("$('#{$sId}').toggleClass('status-closed');");
+				}
+			}
 		}
 	}
 
