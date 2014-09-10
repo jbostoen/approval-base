@@ -1762,7 +1762,7 @@ EOF
 		return false;
 	}
 
-	static public function GetPopMenuItems($iMenuId, $param)
+	static public function GetPopMenuItems($iMenuId, $param, $sClassFilter = 'UserRequest')
 	{
 		$aRet = array();
 		if ($iMenuId == iPopupMenuExtension::MENU_OBJDETAILS_ACTIONS)
@@ -1771,7 +1771,7 @@ EOF
 
 
 			// Filter out the object out of scope of the approval processes
-			if (get_class($oObject) == 'UserRequest')
+			if ($oObject instanceOf $sClassFilter)
 			{
 				// Is there an ongoing approval process for the object ?
 				$oApprovSearch = DBObjectSearch::FromOQL('SELECT ApprovalScheme WHERE status = \'ongoing\' AND obj_class = :obj_class AND obj_key = :obj_key');
