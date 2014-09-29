@@ -1140,6 +1140,11 @@ EOF
 		$aStepData = $aSteps[$iCurrentStep];
 		foreach($aStepData['approvers'] as &$aApproverData)
 		{
+			if (isset($aApproverData['answer_time']))
+			{
+				// The answer has been given: skip
+				continue;
+			}
 			if (($aApproverData['class'] == $sContactClass) && ($aApproverData['id'] == $iContactId))
 			{
 				return $aApproverData['passcode'];
