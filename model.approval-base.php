@@ -993,6 +993,7 @@ EOF
 
 	/**
 	 * Overridable helper to store the replier comment	
+	 * Actually, it does record something even if the comment is left empty, which is the expected behavior
 	 */
 	protected function RecordComment($sComment, $sIssuerInfo)
 	{
@@ -1054,8 +1055,9 @@ EOF
 				if ($sComment != '')
 				{
 					$aApproverData['comment'] = $sComment;
-					$this->RecordComment($sComment, $this->GetIssuerInfo($bApprove, $oApprover, $oSubstitute));
 				}
+				// RecordComment does not solely record the comment... that's why it must be called anytime
+				$this->RecordComment($sComment, $this->GetIssuerInfo($bApprove, $oApprover, $oSubstitute));
 
 				// The answer may be originated by the approver or a substitute
 				//
@@ -1113,6 +1115,7 @@ EOF
 		{
 			$sIssuerInfo = Dict::Format('Approval:Rejected-By', UserRights::GetUserFriendlyName());
 		}
+		// RecordComment does not solely record the comment... that's why it must be called even if the comment is empty
 		$this->RecordComment($sComment, $sIssuerInfo);
 
 		$this->Set('abort_user_id', UserRights::GetUserId());
