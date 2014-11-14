@@ -1546,7 +1546,10 @@ EOF
 		catch (Exception $e)
 		{
 			$sMessage = Dict::Format('Approval:Error:Email', $e->getMessage());
-			cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'approval-process-exec', Dict::Format('Approval:Tab:Error', $sMessage), 'error', 0);
+			if ($oObj = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'), false))
+			{
+				cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'approval-process-exec', Dict::Format('Approval:Tab:Error', $sMessage), 'error', 0);
+			}
 			$this->Set('last_error', $sMessage);
 		}
 	}
