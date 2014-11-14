@@ -100,4 +100,15 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
 	'Approval:Ongoing-Title+' => 'Freigabe Prozesse für Objekte der Klasse %1$s',
 	//'Approval:Ongoing-NothingCurrently' => 'There is no ongoing approval.',
 	'Approval:Ongoing-NothingCurrently' => 'Es gibt keine laufenden Freigaben.',
+
+	//'Approval:Remind-Btn' => 'Send a reminder...',
+	'Approval:Remind-Btn' => 'Erinnerung versenden...',
+	//'Approval:Remind-DlgTitle' => 'Send a reminder',
+	'Approval:Remind-DlgTitle' => 'Erinnerung versenden',
+	//'Approval:Remind-DlgBody' => 'The following contacts will be notified again:',
+	'Approval:Remind-DlgBody' => 'Die folgenden Kontakte werden erneut benachrichtigt:',
+	//'Approval:ReminderDone' => 'A reminder has been sent to %1$d persons.',
+	'Approval:ReminderDone' => 'Eine Erinnerung wurde an %1$d Personen versandt.',
+	//'Approval:Reminder-Subject' => '%1$s (reminder)',
+	'Approval:Reminder-Subject' => '%1$s (Erinnerung)',
 ));
