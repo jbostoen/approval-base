@@ -1107,13 +1107,25 @@ EOF
 		{
 			return;
 		}
-		if ($bApprove)
+		// The user friendly name should be formatted the same way as it is the case for the approvers
+		$iContactId = UserRights::GetContactId();
+		if ($iContactId == '')
 		{
-			$sIssuerInfo = Dict::Format('Approval:Approved-By', UserRights::GetUserFriendlyName());
+			$sUserFriendlyName = UserRights::GetUserFriendlyName();
 		}
 		else
 		{
-			$sIssuerInfo = Dict::Format('Approval:Rejected-By', UserRights::GetUserFriendlyName());
+			$oContact = MetaModel::GetObject('Contact', $iContactId);
+			$sUserFriendlyName = $oContact->Get('friendlyname');
+		}
+		
+		if ($bApprove)
+		{
+			$sIssuerInfo = Dict::Format('Approval:Approved-By', $sUserFriendlyName);
+		}
+		else
+		{
+			$sIssuerInfo = Dict::Format('Approval:Rejected-By', $sUserFriendlyName);
 		}
 		// RecordComment does not solely record the comment... that's why it must be called even if the comment is empty
 		$this->RecordComment($sComment, $sIssuerInfo);
