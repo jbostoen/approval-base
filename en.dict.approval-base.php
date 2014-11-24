@@ -86,7 +86,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Remind-Btn' => 'Send a reminder...',
 	'Approval:Remind-DlgTitle' => 'Send a reminder',
 	'Approval:Remind-DlgBody' => 'The following contacts will be notified again:',
-	'Approval:ReminderDone' => 'A reminder has been sent to %1$d persons.',
+	'Approval:ReminderDone' => 'A reminder has been sent to %1$d person(s).',
 	'Approval:Reminder-Subject' => '%1$s (reminder)',
 ));
 ?>

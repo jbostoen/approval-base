@@ -28,7 +28,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Tab:Start' => 'Début',
 	'Approval:Tab:End' => 'Fin',
 	'Approval:Tab:StepEnd-Limit' => 'Limite de temps (Résultat implicite)',
-	'Approval:Tab:StepEnd-Theoretical' => 'Limite de temps théorique (duréé limitée à %1$s mn)',
+	'Approval:Tab:StepEnd-Theoretical' => 'Limite de temps théorique (durée limitée à %1$s mn)',
 	'Approval:Tab:StepSumary-Ongoing' => 'En attente de réponse',
 	'Approval:Tab:StepSumary-OK' => 'Approuvé',
 	'Approval:Tab:StepSumary-KO' => 'Rejeté',
@@ -44,7 +44,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 
 	'Approval:Tab:Error' => 'Une erreur est survenue durant le processus d\'approbation %1$s',
 
-	'Approval:Error:Email' => 'Le mel n\'a pu être envoyé (%1$s)',
+	'Approval:Error:Email' => 'Le mél n\'a pu être envoyé (%1$s)',
 
 	'Approval:Comment-Label' => 'Commentaire',
 	'Approval:Comment-Tooltip' => 'Obligatoire pour pouvoir rejeter, optionnel pour accepter',
@@ -52,7 +52,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Action-Approve' => 'Approuver',
 	'Approval:Action-Reject' => 'Rejeter',
 	'Approval:Action-ApproveOrReject' => 'Approuver ou Rejeter',
-	'Approval:Action-Abort' => 'Contourner le process d\'approbation',
+	'Approval:Action-Abort' => 'Contourner le processus d\'approbation',
 
 	'Approval:Form:Title' => 'Approbation',
 	'Approval:Form:Ref' => 'Processus d\'approbation pour %1$s',
@@ -62,12 +62,12 @@ Dict::Add('FR FR', 'French', 'Français', array(
 
 	'Approval:Form:AnswerGivenBy' => 'Désolé, la réponse a déjà été donnée par \'%1$s\'', 
 	'Approval:Form:AlreadyApproved' => 'Désolé, le processus d\'approbation a été complété. Résultat: approuvé.',
-	'Approval:Form:AlreadyRejected' => 'Désolé, le processus d\'approbation a été complété. Résultat: Rejecté.',
+	'Approval:Form:AlreadyRejected' => 'Désolé, le processus d\'approbation a été complété. Résultat: Rejeté.',
 
-	'Approval:Form:StepApproved' => 'Désolé cette phase a été réalisé avec le résultat: Apprové. Le processus d\'approbation continue...',
-	'Approval:Form:StepRejected' => 'Désolé cette phase a été réalisé avec le résultat: Rejecté. Le processus d\'approbation continue...',
+	'Approval:Form:StepApproved' => 'Désolé cette phase a été réalisé avec le résultat: Approuvé. Le processus d\'approbation continue...',
+	'Approval:Form:StepRejected' => 'Désolé cette phase a été réalisé avec le résultat: Rejeté. Le processus d\'approbation continue...',
 
-	'Approval:Abort:Explain' => 'Vous avez demandé à <b>contourner</b> le processus d\'approbation. Ceci va interrompre le processus, et les personnes interrogée ne pourront plus donner leur avis.',
+	'Approval:Abort:Explain' => 'Vous avez demandé à <b>contourner</b> le processus d\'approbation. Ceci va interrompre le processus, et les personnes interrogées ne pourront plus donner leur avis.',
 
 	'Approval:Form:AnswerRecorded-Continue' => 'Votre réponse a été enregistrée. Le processus d\'approbation continue...',
 	'Approval:Form:AnswerRecorded-Approved' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine avec succès.',
@@ -85,8 +85,8 @@ Dict::Add('FR FR', 'French', 'Français', array(
 
 	'Approval:Remind-Btn' => 'Envoyer une relance...',
 	'Approval:Remind-DlgTitle' => 'Envoyer une relance',
-	'Approval:Remind-DlgBody' => 'Un email de relance va être envoyé aux destinataires suivants:',
-	'Approval:ReminderDone' => 'La relance a été faite pour %1$d contacts.',
+	'Approval:Remind-DlgBody' => 'Un mél de relance va être envoyé aux destinataires suivants:',
+	'Approval:ReminderDone' => 'La relance a été faite pour %1$d contact(s).',
 	'Approval:Reminder-Subject' => '%1$s (rappel)',
 ));
 ?>
