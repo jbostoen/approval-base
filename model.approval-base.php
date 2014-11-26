@@ -1851,16 +1851,6 @@ class ApprovalBasePlugin implements iApplicationUIExtension, iApplicationObjectE
 			return;
 		}
 
-		$oPage->add_style(
-<<<EOF
-div.approval-exec-label {
-	margin-top: 15px;
-	margin-bottom: 5px;
-	font-weight: bolder;
-}
-EOF
-		);
-
 		$bLastExecFirst = MetaModel::GetModuleSetting('approval-base', 'list_last_first', false);
 
 		$oApprovSearch = DBObjectSearch::FromOQL('SELECT ApprovalScheme WHERE obj_class = :obj_class AND obj_key = :obj_key');
@@ -1868,9 +1858,23 @@ EOF
 		// Get the approvals (for the current object)
 		$oApprovals = new DBObjectSet($oApprovSearch, array('started' => !$bLastExecFirst), array('obj_class' => $sClass, 'obj_key' => $oObject->GetKey()));
 
-		if ($oApprovals->Count() > 1)
+		if ($oApprovals->Count() > 0)
 		{
+			$oPage->SetCurrentTab(Dict::S('Approval:Tab:Title'));
+
 			$oPage->add_style(
+<<<EOF
+div.approval-exec-label {
+	margin-top: 15px;
+	margin-bottom: 5px;
+	font-weight: bolder;
+}
+EOF
+			);
+
+			if ($oApprovals->Count() > 1)
+			{
+				$oPage->add_style(
 <<<EOF
 div.approval-exec-label {
 	background: url(../images/minus.gif) no-repeat left;
@@ -1885,37 +1889,37 @@ div.approval-exec-status {
 	margin-left: 5px;
 }
 EOF
-			);
-		}
-
-		$oPage->SetCurrentTab(Dict::S('Approval:Tab:Title'));
-		while ($oScheme = $oApprovals->Fetch())
-		{
-			$sId = 'approval-exec-'.$oScheme->GetKey();
-			$sLabel = trim($oScheme->Get('label'));
-			if ((strlen($sLabel) == 0) && ($oApprovals->Count() > 1))
-			{
-				// A label is mandatory to have a place to click to toggle, let's give a default one
-				$oStarted = new DateTime($oScheme->Get('started'));
-				$sLabel = $oStarted->format('Y-m-d H:i');
-			}
-			if (strlen($sLabel) > 0)
-			{
-				$oPage->add('<div id="'.$sId.'" class="approval-exec-label">'.$sLabel.'</div>');
+				);
 			}
 
-			$oPage->add('<div id="'.$sId.'_status" class="approval-exec-status">');
-			$oPage->add($oScheme->GetDisplayStatus($oPage));
-			$oPage->add('</div>');
-
-			if ($oApprovals->Count() > 1)
+			while ($oScheme = $oApprovals->Fetch())
 			{
-				$oPage->add_ready_script("$('#{$sId}').click( function() { $('#{$sId}_status').slideToggle(); } );\n");
-				$oPage->add_ready_script("$('#{$sId}').click( function() { $(this).toggleClass('status-closed'); } );\n");
-				if ($oScheme->Get('status') != 'ongoing')
+				$sId = 'approval-exec-'.$oScheme->GetKey();
+				$sLabel = trim($oScheme->Get('label'));
+				if ((strlen($sLabel) == 0) && ($oApprovals->Count() > 1))
 				{
-					$oPage->add_ready_script("$('#{$sId}_status').slideToggle();");
-					$oPage->add_ready_script("$('#{$sId}').toggleClass('status-closed');");
+					// A label is mandatory to have a place to click to toggle, let's give a default one
+					$oStarted = new DateTime($oScheme->Get('started'));
+					$sLabel = $oStarted->format('Y-m-d H:i');
+				}
+				if (strlen($sLabel) > 0)
+				{
+					$oPage->add('<div id="'.$sId.'" class="approval-exec-label">'.$sLabel.'</div>');
+				}
+
+				$oPage->add('<div id="'.$sId.'_status" class="approval-exec-status">');
+				$oPage->add($oScheme->GetDisplayStatus($oPage));
+				$oPage->add('</div>');
+
+				if ($oApprovals->Count() > 1)
+				{
+					$oPage->add_ready_script("$('#{$sId}').click( function() { $('#{$sId}_status').slideToggle(); } );\n");
+					$oPage->add_ready_script("$('#{$sId}').click( function() { $(this).toggleClass('status-closed'); } );\n");
+					if ($oScheme->Get('status') != 'ongoing')
+					{
+						$oPage->add_ready_script("$('#{$sId}_status').slideToggle();");
+						$oPage->add_ready_script("$('#{$sId}').toggleClass('status-closed');");
+					}
 				}
 			}
 		}
