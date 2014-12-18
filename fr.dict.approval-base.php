@@ -61,7 +61,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Form:ObjectDeleted' => 'Désolé, l\'object de l\'approbation a été supprimé.',
 
 	'Approval:Form:AnswerGivenBy' => 'Désolé, la réponse a déjà été donnée par \'%1$s\'', 
-	'Approval:Form:AlreadyApproved' => 'Désolé, le processus d\'approbation a été complété. Résultat: approuvé.',
+	'Approval:Form:AlreadyApproved' => 'Désolé, le processus d\'approbation a été complété. Résultat: Approuvé.',
 	'Approval:Form:AlreadyRejected' => 'Désolé, le processus d\'approbation a été complété. Résultat: Rejeté.',
 
 	'Approval:Form:StepApproved' => 'Désolé cette phase a été réalisé avec le résultat: Approuvé. Le processus d\'approbation continue...',
