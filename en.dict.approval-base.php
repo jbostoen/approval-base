@@ -70,8 +70,8 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Abort:Explain' => 'You have requested to <b>bypass</b> the approval process. This will stop the process and none of the approvers will be allowed to give their answer anymore.',
 
 	'Approval:Form:AnswerRecorded-Continue' => 'Your answer has been recorded. The approval process is continuing.',
-	'Approval:Form:AnswerRecorded-Approved' => 'Your answer has been recorded: the approval is now complete with success.',
-	'Approval:Form:AnswerRecorded-Rejected' => 'Your answer has been recorded: the approval is now complete with failure.',
+	'Approval:Form:AnswerRecorded-Approved' => 'Your answer has been recorded: the approval process is now complete with result APPROVED.',
+	'Approval:Form:AnswerRecorded-Rejected' => 'Your answer has been recorded: the approval process is now complete with result REJECTED.',
 
 	'Approval:Approved-On-behalf-of' => 'Approved by %1$s on behalf of %2$s',
 	'Approval:Rejected-On-behalf-of' => 'Rejected by %1$s on behalf of %2$s',

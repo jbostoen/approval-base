@@ -70,8 +70,8 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Abort:Explain' => 'Vous avez demandé à <b>contourner</b> le processus d\'approbation. Ceci va interrompre le processus, et les personnes interrogées ne pourront plus donner leur avis.',
 
 	'Approval:Form:AnswerRecorded-Continue' => 'Votre réponse a été enregistrée. Le processus d\'approbation continue...',
-	'Approval:Form:AnswerRecorded-Approved' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine avec succès.',
-	'Approval:Form:AnswerRecorded-Rejected' => 'Votre réponse a été enregistrée. Le processus d\'approbation se termine en échec.',
+	'Approval:Form:AnswerRecorded-Approved' => 'Votre réponse a été enregistrée. Le processus d\'approbation est maintenant terminé avec le résultat "Approuvé".',
+	'Approval:Form:AnswerRecorded-Rejected' => 'Votre réponse a été enregistrée. Le processus d\'approbation est maintenant terminé avec le résultat "Rejeté".',
 
 	'Approval:Approved-On-behalf-of' => 'Approuvé par %1$s pour le compte de %2$s',
 	'Approval:Rejected-On-behalf-of' => 'Rejeté par %1$s pour le compte de %2$s',
