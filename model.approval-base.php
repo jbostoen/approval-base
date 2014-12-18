@@ -2071,12 +2071,7 @@ class CheckApprovalTimeout implements iBackgroundProcess
 
 	public function Process($iTimeLimit)
 	{
-		$oMyChange = new CMDBChange();
-		$oMyChange->Set("date", time());
-		$oMyChange->Set("userinfo", "Automatic timeout");
-		$iChangeId = $oMyChange->DBInsertNoReload();
-		// or ... ???
-		// CMDBObject::SetTrackInfo($sTrackInfo);
+		CMDBObject::SetTrackInfo("Automatic timeout");
 
       $aReport = array();
 
