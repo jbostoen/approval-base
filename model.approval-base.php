@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2012-2014 Combodo SARL
+// Copyright (C) 2012-2016 Combodo SARL
 //
 //   This program is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -173,7 +173,7 @@ abstract class ApprovalScheme extends DBObject
 		if ($this->IsLoginMandatoryToSeeObjectDetails($oApprover, $oObject))
 		{
 			require_once(APPROOT.'/application/loginwebpage.class.inc.php');
-			LoginWebPage::DoLogin(); // Check user rights and prompt if needed
+			LoginWebPage::DoLoginEx(); // Check user rights and prompt if needed
 		}
 		$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
 	}

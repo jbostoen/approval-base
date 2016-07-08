@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2012 Combodo SARL
+// Copyright (C) 2012-2016 Combodo SARL
 //
 //   This program is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -296,11 +296,11 @@ try
 	$sOperation = utils::ReadParam('operation', '');
 	$sFrom = utils::ReadParam('from', '');
 	$bAbort = (utils::ReadParam('abort', '') == 1);
-	
+
 	if ($sFrom == 'object_details')
 	{
 		require_once(APPROOT.'/application/loginwebpage.class.inc.php');
-		LoginWebPage::DoLogin(); // Check user rights and prompt if needed
+		LoginWebPage::DoLoginEx(); // Check user rights and prompt if needed
 
 		require_once(APPROOT.'application/itopwebpage.class.inc.php');
 		$oP = new iTopWebPage(Dict::S('Approval:Form:Title'));
