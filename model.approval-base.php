@@ -495,7 +495,17 @@ EOF
 			{
 				$sUserInfo = 'User::'.$iAbortUser;
 			}
-			$sAbortInfo = '<p>'.Dict::Format('Approval:Tab:End-Abort', $sUserInfo, $this->Get('abort_date')).'</p>';
+			if (method_exists('AttributeDateTime', 'GetFormat'))
+			{
+				// Requires iTop >= 2.3.0
+				$sAbortDate = AttributeDateTime::GetFormat()->Format($this->Get('abort_date'));
+			}
+			else
+			{
+				// Compatibility with iTop < 2.3.0
+				$sAbortDate = $this->Get('abort_date');
+			}
+			$sAbortInfo = '<p>'.Dict::Format('Approval:Tab:End-Abort', $sUserInfo, $sAbortDate).'</p>';
 			$sAbortInfo .= '<p><quote>'.str_replace(array("\r\n", "\n", "\r"), "<br/>", htmlentities($this->Get('abort_comment'), ENT_QUOTES, 'UTF-8')).'</quote></p>';
 
 			$sHtml .= "<div id=\"abort_info\" class=\"header_message message_info\" style=\"vertical-align:middle;\">\n";
@@ -1698,7 +1708,17 @@ EOF
 	 */	
 	public function GetDisplayDay($iTime)
 	{
-		return date('Y-m-d', $iTime);
+		if (method_exists('AttributeDateTime', 'GetFormat'))
+		{
+			// Requires iTop >= 2.3.0
+			$sDateFormat = (string)AttributeDate::GetFormat();
+		}
+		else
+		{
+			// Compatibility with iTop < 2.3.0
+			$sDateFormat = 'Y-m-d';
+		}
+		return date($sDateFormat, $iTime);
 	}
 
 	/**
@@ -1706,7 +1726,20 @@ EOF
 	 */	
 	public function GetDisplayTime($iTime)
 	{
-		return date('H:i', $iTime);
+		if (method_exists('AttributeDateTime', 'GetFormat'))
+		{
+			// Requires iTop >= 2.3.0
+			// Note: this code has been cut&pasted from AttributeDateTime. Make sure that it remains in sync with the version of iTop
+			$aFormats = MetaModel::GetConfig()->Get('date_and_time_format');
+			$sLang = Dict::GetUserLanguage();
+			$sTimeFormat = isset($aFormats[$sLang]['time']) ? $aFormats[$sLang]['time'] : (isset($aFormats['default']['time']) ? $aFormats['default']['time'] : 'H:i:s');
+		}
+		else
+		{
+			// Compatibility with iTop < 2.3.0
+			$sTimeFormat = 'H:i';
+		}
+		return date($sTimeFormat, $iTime);
 	}
 
 	/**
