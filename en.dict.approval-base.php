@@ -88,5 +88,17 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Remind-DlgBody' => 'The following contacts will be notified again:',
 	'Approval:ReminderDone' => 'A reminder has been sent to %1$d person(s).',
 	'Approval:Reminder-Subject' => '%1$s (reminder)',
+
+	'Approval:Portal:Title' => 'Items awaiting your approval',
+	'Approval:Portal:Title+' => 'Please select items to approve and use the buttons located at the bottom of the page.',
+	'Approval:Portal:NoItem' => 'There is currently no item expecting your approval',
+	'Approval:Portal:WithSelected' => 'With selected...',
+	'Approval:Portal:Btn:Approve' => 'Approve...',
+	'Approval:Portal:Btn:Reject' => 'Reject...',
+	'Approval:Portal:CommentPlaceholder' => 'Please enter a comment (mandatory in case of reject)',
+	'Approval:Portal:Success' => 'Your feedback has been recorded.',
+	'Approval:Portal:Dlg:Approve' => 'Please confirm that you want to approve <em><span class="approval-count">?</span></em> item(s)',
+	'Approval:Portal:Dlg:Btn:Approve' => 'Approve!',
+	'Approval:Portal:Dlg:Reject' => 'Please confirm that you want to reject <em><span class="approval-count">?</span></em> item(s)',
+	'Approval:Portal:Dlg:Btn:Reject' => 'Reject!',
 ));
-?>

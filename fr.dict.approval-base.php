@@ -88,5 +88,17 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Remind-DlgBody' => 'Un mél de relance va être envoyé aux destinataires suivants:',
 	'Approval:ReminderDone' => 'La relance a été faite pour %1$d contact(s).',
 	'Approval:Reminder-Subject' => '%1$s (rappel)',
+
+	'Approval:Portal:Title' => 'Eléments en attente de votre approbation',
+	'Approval:Portal:Title+' => 'Veuillez sélectionner les éléments à approuver, puis utiliser les boutons au bas de la page.',
+	'Approval:Portal:NoItem' => 'Il n\'y a pas de demande en attente de votre approbation',
+	'Approval:Portal:WithSelected' => 'Avec les éléments sélectionnés...',
+	'Approval:Portal:Btn:Approve' => 'Approuver...',
+	'Approval:Portal:Btn:Reject' => 'Rejeter...',
+	'Approval:Portal:CommentPlaceholder' => 'Please enter a comment (mandatory in case of rejection)',
+	'Approval:Portal:Success' => 'Votre avis a été pris en compte.',
+	'Approval:Portal:Dlg:Approve' => 'Veuillez confirmer votre approbation pour <em><span id="approval-count">?</span></em> élément(s)',
+	'Approval:Portal:Dlg:Btn:Approve' => 'Approuver !',
+	'Approval:Portal:Dlg:Reject' => 'Veuillez confirmer votre refus pour <em><span id="approval-count">?</span></em> élément(s)',
+	'Approval:Portal:Dlg:Btn:Reject' => 'Rejeter !',
 ));
-?>

@@ -1,5 +1,5 @@
 <?php
-// Copyright (C) 2012 Combodo SARL
+// Copyright (C) 2012-2016 Combodo SARL
 //
 //   This program is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'approval-base/2.3.0',
+	'approval-base/2.4.0',
 	array(
 		// Identification
 		//
@@ -34,6 +34,9 @@ SetupWebPage::AddModule(
 		// Components
 		//
 		'datamodel' => array(
+			'approvalbrick.class.inc.php',
+			'approvalbrickcontroller.class.inc.php',
+			'approvalbrickrouter.class.inc.php',
 			'model.approval-base.php'
 		),
 		'webservice' => array(

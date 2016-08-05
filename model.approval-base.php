@@ -1035,6 +1035,54 @@ EOF
 	}
 
 	/**
+	 * Helper to determine the real approver behind a replier (himself or somebody else)
+	 *
+	 * @param $oReplier
+	 * @return null
+	 * @throws CoreException
+	 */
+	public function FindApprover($oReplier)
+	{
+		if ($this->Get('status') != 'ongoing')
+		{
+			return null;
+		}
+
+		$aSteps = $this->GetSteps();
+		$iCurrentStep = $this->Get('current_step');
+		if (!array_key_exists($iCurrentStep, $aSteps))
+		{
+			return null;
+		}
+		$aStepData = $aSteps[$iCurrentStep];
+		foreach($aStepData['approvers'] as $aApproverData)
+		{
+			if (($aApproverData['class'] == get_class($oReplier)) && ($aApproverData['id'] == $oReplier->GetKey()))
+			{
+				return $oReplier; // The replier is the approver himself
+			}
+			else
+			{
+				// The answer may be originated by the approver or a substitute
+				//
+				if (array_key_exists('forward', $aApproverData))
+				{
+					foreach ($aApproverData['forward'] as $iIndex => $aSubstituteData)
+					{
+						if (($aSubstituteData['class'] == get_class($oReplier)) && ($aSubstituteData['id'] == $oReplier->GetKey()))
+						{
+							// The replier is a substitue: return the real approver
+							$oApprover = MetaModel::GetObject($aApproverData['class'], $aApproverData['id']);
+							return $oApprover;
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Processes a vote given by an approver:
 	 * - find the approver
 	 * - record the answer
@@ -1859,6 +1907,55 @@ EOF
 		}
 		return $aRet;
 	}
+
+	/**
+	 * API to search for Approvals
+	 *
+	 * @param null $sApproverClass
+	 * @param null $iApproverId
+	 * @return array of ApprovalSheme objects
+	 */
+	static public function ListOngoingApprovals($sApproverClass = null, $iApproverId = null)
+	{
+		$oSearch = DBObjectSearch::FromOQL("SELECT ApprovalScheme WHERE status = 'ongoing'");
+		$oSet = new DBObjectSet($oSearch, array('started' => true));
+		$aApprovals = array();
+		while ($oApproval = $oSet->Fetch())
+		{
+			if (is_null($sApproverClass) || $oApproval->IsActiveApprover($sApproverClass, $iApproverId))
+			{
+				$aApprovals[$oApproval->GetKey()] = $oApproval;
+			}
+		}
+		return $aApprovals;
+	}
+
+	/**
+	 * API - Approve
+	 *
+	 * @param $oReplier Main approver or a substitute
+	 * @param string $sComment
+	 */
+	public function Approve($oReplier, $sComment = '')
+	{
+		$oApprover = $this->FindApprover($oReplier);
+		$oSubstitute = ($oApprover->GetKey() == $oReplier->GetKey()) ? null : $oReplier;
+		$this->OnAnswer(0, $oApprover, true, $oSubstitute, $sComment);
+	}
+
+
+	/**
+	 * API - Reject
+	 *
+	 * @param $oReplier Main approver or a substitute
+	 * @param string $sComment
+	 */
+	public function Reject($oReplier, $sComment)
+	{
+		$oApprover = $this->FindApprover($oReplier);
+		$oSubstitute = ($oApprover->GetKey() == $oReplier->GetKey()) ? null : $oReplier;
+		$this->OnAnswer(0, $oApprover, false, $oSubstitute, $sComment);
+	}
 }
 
 
@@ -2127,4 +2224,3 @@ class CheckApprovalTimeout implements iBackgroundProcess
 }
 
 
-?>
