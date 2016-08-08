@@ -34,9 +34,6 @@ SetupWebPage::AddModule(
 		// Components
 		//
 		'datamodel' => array(
-			'approvalbrick.class.inc.php',
-			'approvalbrickcontroller.class.inc.php',
-			'approvalbrickrouter.class.inc.php',
 			'main.approval-base.php',
 			'model.approval-base.php'
 		),

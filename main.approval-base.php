@@ -24,7 +24,13 @@
  * @license     http://www.opensource.org/licenses/gpl-3.0.html LGPL
  */
 
-
+if (is_dir(MODULESROOT.'itop-portal-base'))
+{
+	// If the portal is installed, then it may use the approval brick
+	require_once(MODULESROOT.'approval-base/approvalbrick.class.inc.php');
+	require_once(MODULESROOT.'approval-base/approvalbrickcontroller.class.inc.php');
+	require_once(MODULESROOT.'approval-base/approvalbrickrouter.class.inc.php');
+}
 
 /**
  * An approval process associated to an object
