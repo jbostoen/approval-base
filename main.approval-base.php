@@ -33,196 +33,8 @@
  * - Advanced behavior can be implemented by overloading some of the methods (e.g. GetDisplayStatus to change the way it is displayed) 
  *    
  **/ 
-abstract class ApprovalScheme extends DBObject
+abstract class _ApprovalScheme_ extends DBObject
 {
-	public static function Init()
-	{
-		$aParams = array
-		(
-			"category" => "application",
-			"key_type" => "autoincrement",
-			"name_attcode" => array("obj_class", "obj_key"),
-			"state_attcode" => "",
-			"reconc_keys" => array(""),
-			"db_table" => "approval_scheme",
-			"db_key_field" => "id",
-			"db_finalclass_field" => "",
-			"display_template" => "",
-			'indexes' => array(
-				array('obj_class', 'obj_key'),
-			)
-		);
-		MetaModel::Init_Params($aParams);
-		MetaModel::Init_InheritAttributes();
-
-		MetaModel::Init_AddAttribute(new AttributeString("obj_class", array("allowed_values"=>null, "sql"=>"obj_class", "default_value"=>"", "is_null_allowed"=>false, "depends_on"=>array())));
-		MetaModel::Init_AddAttribute(new AttributeInteger("obj_key", array("allowed_values"=>null, "sql"=>"obj_key", "default_value"=>"", "is_null_allowed"=>false, "depends_on"=>array())));
-
-		MetaModel::Init_AddAttribute(new AttributeDateTime("started", array("allowed_values"=>null, "sql"=>"started", "default_value"=>"", "is_null_allowed"=>false, "depends_on"=>array())));
-		MetaModel::Init_AddAttribute(new AttributeDateTime("ended", array("allowed_values"=>null, "sql"=>"ended", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
-
-		MetaModel::Init_AddAttribute(new AttributeDeadline("timeout", array("allowed_values"=>null, "sql"=>"timeout", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
-
-		MetaModel::Init_AddAttribute(new AttributeInteger("current_step", array("allowed_values"=>null, "sql"=>"current_step", "default_value"=>0, "is_null_allowed"=>false, "depends_on"=>array())));
-
-		MetaModel::Init_AddAttribute(new AttributeEnum("status", array("allowed_values"=>new ValueSetEnum('ongoing,accepted,rejected'), "sql"=>"status", "default_value"=>"ongoing", "is_null_allowed"=>false, "depends_on"=>array())));
-		MetaModel::Init_AddAttribute(new AttributeString("last_error", array("allowed_values"=>null, "sql"=>"last_error", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
-
-		MetaModel::Init_AddAttribute(new AttributeText("abort_comment", array("allowed_values"=>null, "sql"=>"abort_comment", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
-		MetaModel::Init_AddAttribute(new AttributeExternalKey("abort_user_id", array("targetclass"=>"User", "allowed_values"=>null, "sql"=>"abort_user_id", "is_null_allowed"=>true, "on_target_delete"=>DEL_MANUAL, "depends_on"=>array())));
-		MetaModel::Init_AddAttribute(new AttributeDateTime("abort_date", array("allowed_values"=>null, "sql"=>"abort_date", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
-
-		MetaModel::Init_AddAttribute(new AttributeString("label", array("allowed_values"=>null, "sql"=>"label", "default_value"=>"", "is_null_allowed"=>true, "depends_on"=>array())));
-
-		// Serialized array of steps (ordered)
-		// A step is and array of
-		//		'timeout_sec' => <integer> (0 if no timeout)
-		//		'timeout_approve' => <boolean> (true by default, meaning "approve by default") 
-		//		'status' => <string> (idle|ongoing|done|timedout) 
-		//		'started' => <boolean> (entry missing if not started yet) 
-		//		'ended' => <boolean> (entry missing if not complete yet) 
-		//		'approved' => <boolean> (entry missing if not complete yet) 
-		//		'approvers' => array of
-		//			'class' => <string> 
-		//			'id' => <integer>
-		//			'passcode' => <string>
-		//			'answer_time' => <unix time> (entry missing if no reply yet)
-		//			'approval' => <boolean> (entry missing if no reply yet)
-		// 
-		MetaModel::Init_AddAttribute(new AttributeText("steps", array("allowed_values"=>null, "sql"=>"steps", "default_value"=>"", "is_null_allowed"=>false, "depends_on"=>array())));
-	}
-
-	/**
-	 * Called when an object is entering a new state (or just created), and before it gets saved
-	 * The approval scheme should be prepared depending on the target object:
-	 * 	find the relevant approvers
-	 * 	perform parallel approval (several approvers in one step)
-	 * 	perform serialized approval (several steps)
-	 * 	tune the timeouts
-	 * Available helpers:
-	 * 	AddStep(aApprovers, iTimeoutSec, bApproveOnTimeout)
-	 * 		 	 	 	 	 	 	 
-	 * @param object oObject  The object concerned
-	 * @param string sReachingState The state that this object has just reached
-	 * @return null if no approval process is needed, an instance of ApprovalScheme otherwise
-	 */	 	
-	public static function GetApprovalScheme($oObject, $sReachingState)
-	{
-		return null;
-	}
-
-	/**
-	 * Called when the email is being created for a given approver
-	 * 	 
-	 * @param string sContactClass The approver object class
-	 * @param string iContactId The approver object id
-	 * @return string The subject in pure text
-	 */	 	
-	abstract public function GetEmailSubject($sContactClass, $iContactId);
-
-	public function GetReminderSubject($sContactClass, $iContactId)
-	{
-		return Dict::Format('Approval:Reminder-Subject', $this->GetEmailSubject($sContactClass, $iContactId));
-	}
-
-	/**
-	 * Called when the email is being created for a given approver
-	 * 	 
-	 * @param string sContactClass The approver object class
-	 * @param string iContactId The approver object id
-	 * @return string The email body in HTML
-	 */	 	
-	abstract public function GetEmailBody($sContactClass, $iContactId);
-
-	/**
-	 * Called when the form is being created for a given approver
-	 * 	 
-	 * @param string sContactClass The approver object class
-	 * @param string iContactId The approver object id
-	 * @return string The form body in HTML
-	 */	 	
-	public function GetFormBody($sContactClass, $iContactId)
-	{
-		return $this->GetEmailSubject($sContactClass, $iContactId);
-	}
-
-	/**
-	 * Called when the approval is being completed with success
-	 * 	 
-	 * @param object oObject The object being under approval process
-	 * @return void The object can be modified within this handler, it will be saved later on
-	 */	 	
-	abstract public function DoApprove(&$oObject);
-
-	/**
-	 * Called when the approval is being completed with failure
-	 * 	 
-	 * @param object oObject The object being under approval process
-	 * @return void The object can be modified within this handler, it will be saved later on
-	 */	 	
-	abstract public function DoReject(&$oObject);
-
-	/**
-	 * Optionaly override this verb to change the way object details are displayed
-	 * Appeared in Version 1.2 of the module 	 
-	 *
-	 * @return void
-	 */	 	
-	public function DisplayObjectDetails($oPage, $oApprover, $oObject, $oSubstitute = null)
-	{
-		if ($this->IsLoginMandatoryToSeeObjectDetails($oApprover, $oObject))
-		{
-			require_once(APPROOT.'/application/loginwebpage.class.inc.php');
-			LoginWebPage::DoLoginEx(); // Check user rights and prompt if needed
-		}
-		$oObject->DisplayBareProperties($oPage/*, $bEditMode = false*/);
-	}
-
-	/**
-	 * Optionaly override this verb to change the way the changes are tracked in the object history and in the case log (if the comment are copied there)
-	 * Appeared in Version 1.2 of the module 	 
-	 *
-	 * @return void
-	 */	 	
-	public function GetIssuerInfo($bApproved, $oApprover, $oSubstitute = null)
-	{
-		if ($oSubstitute)
-		{
-			if ($bApproved)
-			{
-				$sRes = Dict::Format('Approval:Approved-On-behalf-of', $oSubstitute->Get('friendlyname'), $oApprover->Get('friendlyname'));
-			}
-			else
-			{
-				$sRes = Dict::Format('Approval:Rejected-On-behalf-of', $oSubstitute->Get('friendlyname'), $oApprover->Get('friendlyname'));
-			}
-		}
-		else
-		{
-			if ($bApproved)
-			{
-				$sRes = Dict::Format('Approval:Approved-By', $oApprover->Get('friendlyname'));
-			}
-			else
-			{
-				$sRes = Dict::Format('Approval:Rejected-By', $oApprover->Get('friendlyname'));
-			}
-		}
-		return $sRes;
-	}
-
-	/**
-	 * Optionaly override this verb to change the way working hours will be computed
-	 * Appeared in Version 1.1 of the module 	 
-	 * 	 
-	 * @return string Name of a class implementing the interface iWorkingTimeComputer
-	 */	 	
-	protected function GetWorkingTimeComputer()
-	{
-		// This class is provided as the default way to compute the active time, aka 24x7, 24 hours a day!
-		return 'DefaultWorkingTimeComputer';
-	}
-
 	/**
 	 * Can be overriden for simulation purposes (troubleshooting, tutorial)
 	 */
@@ -1002,39 +814,6 @@ EOF
 	}
 
 	/**
-	 * Overridable helper to store the replier comment	
-	 * Actually, it does record something even if the comment is left empty, which is the expected behavior
-	 */
-	protected function RecordComment($sComment, $sIssuerInfo)
-	{
-		$sAttCode = MetaModel::GetModuleSetting('approval-base', 'comment_attcode');
-		if ($sAttCode != '')
-		{
-			if (MetaModel::IsValidAttCode($this->Get('obj_class'), $sAttCode))
-			{
-				if ($oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'), false))
-				{
-					$value = $oObject->Get($sAttCode);
-					$oAttDef = MetaModel::GetAttributeDef($this->Get('obj_class'), $sAttCode);
-					if ($oAttDef instanceof AttributeCaseLog)
-					{
-						$value->AddLogEntry($sComment, $sIssuerInfo);
-					}
-					else
-					{
-						// Cumulate into the given (hopefully) text attribute
-						$sDate = date(Dict::S('UI:CaseLog:DateFormat'));
-						$value .= "\n$sDate - ".$sIssuerInfo." :";
-						$value .= "\n".$sComment;
-					}
-					$oObject->Set($sAttCode, $value);
-					$oObject->DBUpdate();
-				}
-			}
-		}
-	}
-
-	/**
 	 * Helper to determine the real approver behind a replier (himself or somebody else)
 	 *
 	 * @param $oReplier
@@ -1235,50 +1014,6 @@ EOF
 		}
 		return null;
 	}	  	
-
-	/**
-	 *	Helper to make the URL to approve/reject the ticket
-	 */
-	public function MakeReplyUrl($sContactClass, $iContactId, $bFromGUI = true)
-	{
-		$sPassCode = $this->GetContactPassCode($sContactClass, $iContactId);
-		if (is_null($sPassCode))
-		{
-			$sReplyUrl = null;
-		}
-		else
-		{
-			$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.$sContactClass.'-'.$iContactId.'-'.$sPassCode;
-			$sReplyUrl = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken;
-			if ($bFromGUI)
-			{
-				$sReplyUrl .= '&from=object_details';
-			}
-		}
-		return $sReplyUrl;
-	}
-
-	/**
-	 * Helper to determine if a given user is expected to give her answer
-	 */
-	public function IsActiveApprover($sContactClass, $iContactId)
-	{
-		$sPassCode = $this->GetContactPassCode($sContactClass, $iContactId);
-		return (!is_null($sPassCode));
-	}	  	
-
-	/**
-	 * Helper to make the URL to abort the process
-	 */
-	public function MakeAbortUrl($bFromGUI = true)
-	{
-		$sAbortUrl = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?abort=1&approval_id='.$this->GetKey();
-		if ($bFromGUI)
-		{
-			$sAbortUrl .= '&from=object_details';
-		}
-		return $sAbortUrl;
-	}	 	
 
 	/**
 	 * Helper to compute current state start time - this information is not recorded
@@ -1624,48 +1359,6 @@ EOF
 		}
 	}
 
-	/**
-	 * Build and send the message for a given approver (can be a forwarded approval request)
-	 */	 	
-	public function SendApprovalInvitation($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null)
-	{
-		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
-
-		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
-
-		$this->SendEmail(
-			$sTitle,
-			$sIntroduction,
-			$sToken,
-			$this->GetApproverEmailAddress($oToPerson),
-			$this->GetEmailSender($oToPerson, $oObj),
-			$this->GetEmailReplyTo($oToPerson, $oObj)
-		);
-	}
-	
-	/**
-	 * Build and send the REMINDER for a given approver (can be a forwarded approval request)
-	 */	 	
-	public function SendApprovalReminder($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null)
-	{
-		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
-
-		$sTitle = MetaModel::ApplyParams($this->GetReminderSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
-
-		$this->SendEmail(
-			$sTitle,
-			$sIntroduction,
-			$sToken,
-			$this->GetApproverEmailAddress($oToPerson),
-			$this->GetEmailSender($oToPerson, $oObj),
-			$this->GetEmailReplyTo($oToPerson, $oObj)
-		);
-	}
-
 	protected function MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
@@ -1790,82 +1483,6 @@ EOF
 		return date($sTimeFormat, $iTime);
 	}
 
-	/**
-	 * Overridable to determine the approver email address in a different way	
-	 */	
-	public function GetApproverEmailAddress($oApprover)
-	{
-		// Find out which attribute is the email attribute
-		//
-		$sEmailAttCode = 'email';
-		foreach(MetaModel::ListAttributeDefs(get_class($oApprover)) as $sAttCode => $oAttDef)
-		{
-			if ($oAttDef instanceof AttributeEmailAddress)
-			{
-				$sEmailAttCode = $sAttCode;
-			}
-		}
-		$sAddress = $oApprover->Get($sEmailAttCode);
-		return $sAddress;
-	}
-
-	/**
-	 * Overridable to specify the email sender in a more dynamic way
-	 */	
-	public function GetEmailSender($oApprover, $oObject)
-	{
-		return MetaModel::GetModuleSetting('approval-base', 'email_sender');
-	}
-
-	/**
-	 * Overridable to specify the email reply-to in a more dynamic way
-	 */	
-	public function GetEmailReplyTo($oApprover, $oObject)
-	{
-		return MetaModel::GetModuleSetting('approval-base', 'email_reply_to');
-	}
-
-	/**
-	 * Overridable to disable the link to view more information on the object
-	 */	
-	public function IsAllowedToSeeObjectDetails($oApprover, $oObject)
-	{
-		if (get_class($oApprover) != 'Person')
-		{
-			return false;
-		}
-
-		$oSearch = DBObjectSearch::FromOQL_AllData("SELECT User WHERE contactid = :approver_id");
-		$oSet = new DBObjectSet($oSearch, array(), array('approver_id' => $oApprover->GetKey()));
-		if ($oSet->Count() > 0)
-		{
-			// The approver has a login: show the link!
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	/**
-	 * Overridable to force the login when viewing object details
-	 */	
-	public function IsLoginMandatoryToSeeObjectDetails($oApprover, $oObject)
-	{
-		return false;
-	}
-
-	/**
-	 * Overridable to implement the abort feature
-	 * @param oUser (implicitely the current user if null)	 
-	 * Return true if the given user is allowed to abort	 
-	 */	
-	public function IsAllowedToAbort($oUser = null)
-	{
-		return false;
-	}
-
 	static public function GetPopMenuItems($iMenuId, $param, $sClassFilter = 'UserRequest')
 	{
 		$aRet = array();
@@ -1942,7 +1559,6 @@ EOF
 		$oSubstitute = ($oApprover->GetKey() == $oReplier->GetKey()) ? null : $oReplier;
 		$this->OnAnswer(0, $oApprover, true, $oSubstitute, $sComment);
 	}
-
 
 	/**
 	 * API - Reject
