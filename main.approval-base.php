@@ -1315,10 +1315,8 @@ EOF
 		}
 	}
 
-	protected function SendEmail($sTitle, $sIntroduction, $sToken, $sTo, $sFrom, $sReplyTo)
+	protected function SendEmail($sTitle, $sIntroduction, $sReplyUrl, $sTo, $sFrom, $sReplyTo)
 	{
-		$sReplyUrl = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.php?token='.$sToken;
-
 		$sBody = '<html>';
 		$sBody .= '<body>';
 		$sBody .= '<h3>'.$sTitle.'</h3>';

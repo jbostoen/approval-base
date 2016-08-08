@@ -386,12 +386,12 @@
 
 		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
 		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
+		$sReplyUrl = $this->MakeReplyUrl(get_class($oToPerson), $oToPerson->GetKey(), false);
 
 		$this->SendEmail(
 			$sTitle,
 			$sIntroduction,
-			$sToken,
+			$sReplyUrl,
 			$this->GetApproverEmailAddress($oToPerson),
 			$this->GetEmailSender($oToPerson, $oObj),
 			$this->GetEmailReplyTo($oToPerson, $oObj)
@@ -411,12 +411,12 @@
 
 		$sTitle = MetaModel::ApplyParams($this->GetReminderSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
 		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sToken = $this->GetKey().'-'.$this->Get('current_step').'-'.get_class($oToPerson).'-'.$oToPerson->GetKey().'-'.$sPassCode;
+		$sReplyUrl = $this->MakeReplyUrl(get_class($oToPerson), $oToPerson->GetKey(), false);
 
 		$this->SendEmail(
 			$sTitle,
 			$sIntroduction,
-			$sToken,
+			$sReplyUrl,
 			$this->GetApproverEmailAddress($oToPerson),
 			$this->GetEmailSender($oToPerson, $oObj),
 			$this->GetEmailReplyTo($oToPerson, $oObj)
