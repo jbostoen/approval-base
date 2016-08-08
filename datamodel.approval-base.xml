@@ -14,7 +14,7 @@
           * - Advanced behavior can be implemented by overloading some of the methods (e.g. GetDisplayStatus to change the way it is displayed) &#13;
           *    &#13;
           **/</comment>
-        <category>application,bizmodel</category>
+        <category>application</category>
         <abstract>true</abstract>
         <key_type>autoincrement</key_type>
         <db_table>approval_scheme</db_table>
@@ -423,7 +423,6 @@
 		);
 	}]]></code>
         </method>
-
         <method id="GetApproverEmailAddress">
           <comment>/**&#13;
             * Overridable to determine the approver email address in a different way	&#13;
