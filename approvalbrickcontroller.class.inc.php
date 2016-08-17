@@ -41,6 +41,7 @@ use \VariableExpression;
 use \SQLExpression;
 use \UnaryExpression;
 use \Dict;
+use \Combodo\iTop\Portal\Controller\ObjectController;
 use \Combodo\iTop\Portal\Helper\ApplicationHelper;
 use \Combodo\iTop\Portal\Helper\SecurityHelper;
 use \Combodo\iTop\Portal\Brick\AbstractBrick;
@@ -48,13 +49,13 @@ use \Combodo\iTop\Portal\Brick\ApprovalBrick;
 
 class ApprovalBrickController extends BrickController
 {
-	public function DisplayAction(Request $oRequest, Application $oApp, $sBrickId, $sGroupingTab, $sDataLoading = null)
+	public function DisplayAction(Request $oRequest, Application $oApp, $sBrickId, $sDataLoading = null)
 	{
 		$oBrick = ApplicationHelper::GetLoadedBrickFromId($oApp, $sBrickId);
 		$aClassesConfig = $oBrick->GetClasses();
-
+		
 		$oMyself = UserRights::GetContactObject();
-
+		
 		$iProcessed = 0;
 		$sOperation = $oRequest->get('operation');
 		if ($sOperation != '')
@@ -121,7 +122,7 @@ class ApprovalBrickController extends BrickController
 			{
 				foreach ($aObjects[$sClass] as $oObject)
 				{
-					$sUrl = $oApp['url_generator']->generate('p_object_view', array('sObjectClass' => get_class($oObject), 'sObjectId' => $oObject->GetKey()));
+					$sUrl = $oApp['url_generator']->generate('p_approval_view_object', array('sObjectClass' => get_class($oObject), 'sObjectId' => $oObject->GetKey()));
 					$sLabel = $oObject->GetAsHTML('friendlyname');
 					$aValues = array(
 						'_self_' => '<a href="'.$sUrl.'" data-toggle="modal" data-target="#modal-for-all">'.$sLabel.'</a>'
@@ -166,4 +167,63 @@ class ApprovalBrickController extends BrickController
 
 		return $oResponse;
 	}
+
+	public function ViewObjectAction(Request $oRequest, Application $oApp, $sObjectClass, $sObjectId)
+	{
+		// Checking parameters
+		if ($sObjectClass === '' || $sObjectId === '')
+		{
+			IssueLog::Info(__METHOD__ . ' at line ' . __LINE__ . ' : sObjectClass and sObjectId expected, "' . $sObjectClass . '" and "' . $sObjectId . '" given.');
+			$oApp->abort(500, Dict::Format('UI:Error:2ParametersMissing', 'class', 'id'));
+		}
+
+		// Checking security layers
+		// There is no security checks on purpose.
+		// Retrieving object
+		$oObject = MetaModel::GetObject($sObjectClass, $sObjectId, false /* MustBeFound */);
+		if ($oObject === null)
+		{
+			// We should never be there as the secuirty helper makes sure that the object exists, but just in case.
+			IssueLog::Info(__METHOD__ . ' at line ' . __LINE__ . ' : Could not load object ' . $sObjectClass . '::' . $sObjectId . '.');
+			$oApp->abort(404, Dict::S('UI:ObjectDoesNotExist'));
+		}
+
+		$oObjectController = new ObjectController();
+
+		$aData = array('sMode' => 'view');
+		$aData['form'] = $oObjectController->HandleForm($oRequest, $oApp, $aData['sMode'], $sObjectClass, $sObjectId);
+		$aData['form']['title'] = Dict::Format('Brick:Portal:Object:Form:View:Title', MetaModel::GetName($sObjectClass), $oObject->GetName());
+
+		// Preparing response
+		if ($oRequest->isXmlHttpRequest())
+		{
+			// We have to check whether the 'operation' parameter is defined or not in order to know if the form is required via ajax (to be displayed as a modal dialog) or if it's a lifecycle call from a existing form.
+			if ($oRequest->request->get('operation') === null)
+			{
+				$oResponse = $oApp['twig']->render('approval-base/portal/views/object/modal.html.twig', $aData);
+			}
+			else
+			{
+				$oResponse = $oApp->json($aData);
+			}
+		}
+		else
+		{
+			// Adding brick if it was passed
+			$sBrickId = $oRequest->get('sBrickId');
+			if ($sBrickId !== null)
+			{
+				$oBrick = ApplicationHelper::GetLoadedBrickFromId($oApp, $sBrickId);
+				if ($oBrick !== null)
+				{
+					$aData['oBrick'] = $oBrick;
+				}
+			}
+			$aData['sPageTitle'] = $aData['form']['title'];
+			$oResponse = $oApp['twig']->render('approval-base/portal/views/object/layout.html.twig', $aData);
+		}
+
+		return $oResponse;
+	}
+
 }

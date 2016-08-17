@@ -29,8 +29,11 @@ class ApprovalBrickRouter extends AbstractRouter
 	static $aRoutes = array(
 		array('pattern' => '/approval/{sBrickId}',
 			'callback' => 'Combodo\\iTop\\Portal\\Controller\\ApprovalBrickController::DisplayAction',
-			'bind' => 'p_approval_brick',
-			'values' => array('sGroupingTab' => null) // Todo: se débarasser de cette chose inutile
+			'bind' => 'p_approval_brick'
+		),
+		array('pattern' => '/approval/view/{sObjectClass}/{sObjectId}',
+			'callback' => 'Combodo\\iTop\\Portal\\Controller\\ApprovalBrickController::ViewObjectAction',
+			'bind' => 'p_approval_view_object'
 		),
 	);
 

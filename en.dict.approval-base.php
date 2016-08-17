@@ -95,6 +95,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Portal:WithSelected' => 'With selected...',
 	'Approval:Portal:Btn:Approve' => 'Approve...',
 	'Approval:Portal:Btn:Reject' => 'Reject...',
+	'Approval:Portal:CommentTitle' => 'Approval comment',
 	'Approval:Portal:CommentPlaceholder' => 'Please enter a comment (mandatory in case of reject)',
 	'Approval:Portal:Success' => 'Your feedback has been recorded.',
 	'Approval:Portal:Dlg:Approve' => 'Please confirm that you want to approve <em><span class="approval-count">?</span></em> item(s)',
