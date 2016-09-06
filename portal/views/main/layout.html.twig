@@ -38,7 +38,7 @@
 				<div class="modal-dialog" role="document">
 					<div class="modal-content">
 						<div id="approval-body" class="modal-body">
-							<p>{{ 'Approval:Portal:Dlg:Approve'|dict_s|raw }}</p>
+							<p class="approval-confirmation-text">{{ 'Approval:Portal:Dlg:Approve'|dict_s|raw }}</p>
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-default" data-dismiss="modal">{{ 'Portal:Button:Cancel'|dict_s }}</button>
@@ -51,7 +51,7 @@
 				<div class="modal-dialog" role="document">
 					<div class="modal-content">
 						<div id="approval-body" class="modal-body">
-							<p>{{ 'Approval:Portal:Dlg:Reject'|dict_s|raw }}</p>
+							<p class="approval-confirmation-text">{{ 'Approval:Portal:Dlg:Reject'|dict_s|raw }}</p>
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-default" data-dismiss="modal">{{ 'Portal:Button:Cancel'|dict_s }}</button>
@@ -172,10 +172,12 @@
 						EnableApprovalButtons();
 					});
 					$('#btn-approve').click(function(){
+						$('.approval-confirmation-text').html( ($('.approval-item-select:checked').length > 1) ? '{{ 'Approval:Portal:Dlg:Approve'|dict_s|raw }}' : '{{ 'Approval:Portal:Dlg:ApproveOne'|dict_s|raw }}');
 						$('.approval-count').text($('.approval-item-select:checked').length);
 						$('#modal-for-approval').modal();
 					});
 					$('#btn-reject').click(function(){
+						$('.approval-confirmation-text').html( ($('.approval-item-select:checked').length > 1) ? '{{ 'Approval:Portal:Dlg:Reject'|dict_s|raw }}' : '{{ 'Approval:Portal:Dlg:RejectOne'|dict_s|raw }}');
 						$('.approval-count').text($('.approval-item-select:checked').length);
 						$('#modal-for-rejection').modal();
 					});

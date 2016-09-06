@@ -98,7 +98,9 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Portal:CommentPlaceholder' => '',
 	'Approval:Portal:Success' => 'Votre avis a été pris en compte.',
 	'Approval:Portal:Dlg:Approve' => 'Veuillez confirmer votre approbation pour <em><span id="approval-count">?</span></em> élément(s)',
+	'Approval:Portal:Dlg:ApproveOne' => 'Veuillez confirmer votre approbation pour cet élément',
 	'Approval:Portal:Dlg:Btn:Approve' => 'Approuver !',
 	'Approval:Portal:Dlg:Reject' => 'Veuillez confirmer votre refus pour <em><span id="approval-count">?</span></em> élément(s)',
+	'Approval:Portal:Dlg:RejectOne' => 'Veuillez confirmer votre refus pour cet élément',
 	'Approval:Portal:Dlg:Btn:Reject' => 'Rejeter !',
 ));

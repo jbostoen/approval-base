@@ -75,9 +75,17 @@
 		
 		$('#btn-approve-one, #btn-reject-one').off('click').click(function(){
 			var sOperation = ($(this).attr('id') === 'btn-approve-one') ? 'approve' : 'reject';
+			var sModalIdSuffix = ($(this).attr('id') === 'btn-approve-one') ? 'approval' : 'rejection';
 			
 			$('#approval-operation-one').val(sOperation);
-			$('#form_approval_{{ sFormId }}').submit();
+			$('.approval-confirmation-text').html('{{ 'Approval:Portal:Dlg:ApproveOne'|dict_s|raw }}');
+			
+			var oModalElem = $('#modal-for-' + sModalIdSuffix).clone();
+			oModalElem.attr('id', '').appendTo('body');
+			oModalElem.find('#do-approve, #do-reject').off('click').on('click', function(oEvent){
+				$('#form_approval_{{ sFormId }}').submit();
+			});
+			oModalElem.modal('show');
 		});
 	});
 </script>
