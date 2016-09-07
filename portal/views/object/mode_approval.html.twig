@@ -78,7 +78,7 @@
 			var sModalIdSuffix = ($(this).attr('id') === 'btn-approve-one') ? 'approval' : 'rejection';
 			
 			$('#approval-operation-one').val(sOperation);
-			$('.approval-confirmation-text').html('{{ 'Approval:Portal:Dlg:ApproveOne'|dict_s|raw }}');
+			$('.approval-confirmation-text').html((sOperation == 'approve') ? '{{ 'Approval:Portal:Dlg:ApproveOne'|dict_s|raw }}' : '{{ 'Approval:Portal:Dlg:RejectOne'|dict_s|raw }}');
 			
 			var oModalElem = $('#modal-for-' + sModalIdSuffix).clone();
 			oModalElem.attr('id', '').appendTo('body');
