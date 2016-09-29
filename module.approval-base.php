@@ -16,7 +16,7 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'approval-base/2.4.1',
+	'approval-base/2.4.2',
 	array(
 		// Identification
 		//

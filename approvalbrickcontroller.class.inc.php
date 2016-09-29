@@ -63,7 +63,7 @@ class ApprovalBrickController extends BrickController
 			$sComment = $oRequest->get('comment');
 			$aSelected = $oRequest->get('selected');
 
-			$oSearch = DBSearch::FromOQL('SELECT ApprovalScheme WHERE obj_class = :obj_class AND obj_key = :obj_key');
+			$oSearch = DBSearch::FromOQL('SELECT ApprovalScheme WHERE status = \'ongoing\' AND obj_class = :obj_class AND obj_key = :obj_key');
 
 			foreach ($aSelected as $sClass => $aObjects)
 			{
