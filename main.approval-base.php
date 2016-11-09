@@ -77,13 +77,14 @@ abstract class _ApprovalScheme_ extends DBObject
 	/**
 	 * Official mean to declare a new step at the end of the existing sequence
 	 * 	 
-	 * @param array aContact An array of array('class' => ..., 'id' => ...)
+	 * @param array $aContact An array of array('class' => ..., 'id' => ...)
 	 * @param integer $iTimeoutSec The timeout duration if (0 to disable the timeout feature)
 	 * @param boolean $bApproveOnTimeout Set to true to approve in case of timeout for the current step
 	 * @param integer $iExitCondition EXIT_ON_... _FIRST_REJECT, _FIRST_APPROVE, _FIRST_REPLY defaults to the legacy behavior
+	 * @param boolean $bReusePreviousAnswers Set to true to recycle an answer given by an approver at a previous step (if any)
 	 * @return void
 	 */
-	public function AddStep($aContacts, $iTimeoutSec = 0, $bApproveOnTimeout = true, $iExitCondition = self::EXIT_ON_FIRST_REJECT)
+	public function AddStep($aContacts, $iTimeoutSec = 0, $bApproveOnTimeout = true, $iExitCondition = self::EXIT_ON_FIRST_REJECT, $bReusePreviousAnswers = true)
 	{
 		$aApprovers = array();
 		foreach($aContacts as $aApproverData)
@@ -126,6 +127,7 @@ abstract class _ApprovalScheme_ extends DBObject
 			'timeout_sec' => $iTimeoutSec,
 			'timeout_approve' => $bApproveOnTimeout,
 			'exit_condition' => $iExitCondition,
+			'reuse_previous_answers' => $bReusePreviousAnswers,
 			'status' => 'idle', 
 			'approvers' => $aApprovers,
 		);
@@ -797,19 +799,55 @@ EOF
 			$aStepData = &$aSteps[$iCurrentStep];
 			$aStepData['status'] = 'ongoing';
 			$aStepData['started'] = $this->Now();
-
-			$oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'));
-			foreach($aStepData['approvers'] as &$aApproverData)
-			{
-				$oApprover = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
-				if ($oApprover)
-				{
-					$this->SendApprovalInvitation($oApprover, $oObject, $aApproverData['passcode']);
-				}
-			}
 			$this->SetSteps($aSteps);
 			$this->Set('timeout', $this->ComputeTimeout());
 			$this->DBUpdate();
+
+			// New capability that appeared in 2.5.0, thus could be missing in the data structure
+			// in such a case the default is FALSE (though the default behavior for newly created schemes will by TRUE!)
+			$bReusePreviousAnswers = array_key_exists('reuse_previous_answers', $aStepData) ? $aStepData['reuse_previous_answers'] : false;
+
+			$oObject = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'));
+
+			if ($bReusePreviousAnswers)
+			{
+				foreach ($aStepData['approvers'] as &$aApproverData)
+				{
+					$oApprover = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
+					if ($oApprover)
+					{
+						list($iReplyStep, $bApproved, $sComment) = $this->FindAnswer($iCurrentStep, $aApproverData);
+						if ($iReplyStep !== null)
+						{
+							$sNewComment = Dict::Format('Approval:Comment-Reused', $iReplyStep, $sComment);
+							$this->OnAnswer($iCurrentStep, $oApprover, $bApproved, null, $sNewComment);
+							// Something may happen within OnAnswer (and already saved into the DB)
+							if ($this->Get('current_step') != $iCurrentStep)
+							{
+								// The step has been concluded. Exit the prodedure ASAP!
+								break;
+							}
+						}
+					}
+				}
+				// Some step data might have changed... refresh the local variables (avoids sending an email when an answer has been reused)
+				$aSteps = $this->GetSteps();
+				$aStepData = &$aSteps[$iCurrentStep];
+			}
+			if ($this->Get('current_step') == $iCurrentStep)
+			{
+				foreach ($aStepData['approvers'] as &$aApproverData)
+				{
+					if (!array_key_exists('approval', $aApproverData))
+					{
+						$oApprover = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
+						if ($oApprover)
+						{
+							$this->SendApprovalInvitation($oApprover, $oObject, $aApproverData['passcode']);
+						}
+					}
+				}
+			}
 		}
 		else
 		{
@@ -1313,6 +1351,43 @@ EOF
 			// 100% positive or 100% negative, or the latest reply (the latter is a nonsense and should never occur)
 			return $bLastAnswer;
 		}
+	}
+
+	/**
+	 * Lookup for any existing answer (returns information on the first found)
+	 *
+	 * @param $iStrictlyBeforeStep Step before which the search will be made
+	 * @param $aSearchedApproverData The approver which reply should be found
+	 * @return array($iStep, $bApproved, $sComment)
+	 */
+	protected function FindAnswer($iStrictlyBeforeStep, $aSearchedApproverData)
+	{
+		$iFoundStep = null;
+		$bApproved = null;
+		$sComment = null;
+		$sSearchApproverClass = $aSearchedApproverData['class'];
+		$iSearchApproverId = $aSearchedApproverData['id'];
+
+		foreach($this->GetSteps() as $iStep => $aStepData)
+		{
+			if ($iStep >= $iStrictlyBeforeStep) continue;
+			foreach($aStepData['approvers'] as &$aApproverData)
+			{
+				if ($aApproverData['class'] != $sSearchApproverClass) continue;
+				if ($aApproverData['id'] != $iSearchApproverId) continue;
+
+				// We have a match, did it reply?
+				if (array_key_exists('approval', $aApproverData))
+				{
+					$iFoundStep = $iStep;
+					$bApproved = $aApproverData['approval'];
+					$sComment = isset($aApproverData['comment']) ? $aApproverData['comment'] : '';
+					break;
+				}
+			}
+		}
+
+		return array($iFoundStep, $bApproved, $sComment);
 	}
 
 	protected function SendEmail($sTitle, $sIntroduction, $sReplyUrl, $sTo, $sFrom, $sReplyTo)

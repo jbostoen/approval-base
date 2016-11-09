@@ -49,6 +49,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Comment-Label' => 'Your comment',
 	'Approval:Comment-Tooltip' => 'Mandatory for rejection, optional for approval',
 	'Approval:Comment-Mandatory' => 'A comment must be given for rejection',
+	'Approval:Comment-Reused' => 'Reply already made at step %1$s, with comment "%2$s"',
 	'Approval:Action-Approve' => 'Approve',
 	'Approval:Action-Reject' => 'Reject',
 	'Approval:Action-ApproveOrReject' => 'Approve or Reject',

@@ -49,6 +49,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Comment-Label' => 'Commentaire',
 	'Approval:Comment-Tooltip' => 'Obligatoire pour pouvoir rejeter, optionnel pour accepter',
 	'Approval:Comment-Mandatory' => 'Veuillez saisir un commentaire pour pouvoir rejeter',
+	'Approval:Comment-Reused' => 'Réponse déjà faite à l\'étape %1$s, avec le commentaire "%2$s"',
 	'Approval:Action-Approve' => 'Approuver',
 	'Approval:Action-Reject' => 'Rejeter',
 	'Approval:Action-ApproveOrReject' => 'Approuver ou Rejeter',
