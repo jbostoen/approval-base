@@ -819,7 +819,8 @@ EOF
 						list($iReplyStep, $bApproved, $sComment) = $this->FindAnswer($iCurrentStep, $aApproverData);
 						if ($iReplyStep !== null)
 						{
-							$sNewComment = Dict::Format('Approval:Comment-Reused', $iReplyStep, $sComment);
+							// Note: the step must be 1-based
+							$sNewComment = Dict::Format('Approval:Comment-Reused', $iReplyStep + 1, $sComment);
 							$this->OnAnswer($iCurrentStep, $oApprover, $bApproved, null, $sNewComment);
 							// Something may happen within OnAnswer (and already saved into the DB)
 							if ($this->Get('current_step') != $iCurrentStep)
