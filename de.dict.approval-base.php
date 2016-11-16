@@ -54,9 +54,6 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
 	//'Approval:Tab:Error' => 'An error occured during the approval process: %1$s',
 	'Approval:Tab:Error' => 'Während des Genehmigungsprozesses trat ein Fehler auf: %1$s',
 
-	//'Approval:Error:Email' => 'The email could not be sent (%1$s)',
-	'Approval:Error:Email' => 'Die EMail konnte nicht gesendet werden (%1$s)',
-
 	//'Approval:Action-Approve' => 'Approve',
 	'Approval:Action-Approve' => 'Genehmigen',
 	//'Approval:Action-Reject' => 'Reject',
@@ -109,6 +106,10 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
 	'Approval:Remind-DlgBody' => 'Die folgenden Kontakte werden erneut benachrichtigt:',
 	//'Approval:ReminderDone' => 'A reminder has been sent to %1$d persons.',
 	'Approval:ReminderDone' => 'Eine Erinnerung wurde an %1$d Personen versandt.',
-	//'Approval:Reminder-Subject' => '%1$s (reminder)',
-	'Approval:Reminder-Subject' => '%1$s (Erinnerung)',
+
+	'Class:TriggerOnApprovalRequest' => 'Trigger (when an approval is requested)',
+	'Class:TriggerOnApprovalRequest+' => 'Trigger on approval request',
+	'Class:ActionEmailApprovalRequest' => 'Email approval request',
+	'Class:ActionEmailApprovalRequest/Attribute:subject_reminder' => 'Subject (reminder)',
+	'Class:ActionEmailApprovalRequest/Attribute:subject_reminder+' => 'Subject of the email in case a reminder is sent',
 ));

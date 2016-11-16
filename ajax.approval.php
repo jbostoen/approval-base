@@ -91,13 +91,17 @@ try
 						{
 							$oSubstituteTo = null;
 						}
-						$oScheme->SendApprovalReminder($oTarget, $oObject, $aData['passcode'], $oSubstituteTo);
+						$oScheme->SendApprovalRequest($oTarget, $oObject, $aData['passcode'], $oSubstituteTo, true);
 						$Sent++;
 					}
 				}
 			}
 			$oPage->add(Dict::Format('Approval:ReminderDone', $Sent));
-			
+			if ($Sent > 0)
+			{
+				// Reload the object details so as to refresh the notifications tab
+				$oPage->add_script("window.location.reload();");
+			}
 		}
 		catch (Exception $e)
 		{

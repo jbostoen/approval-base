@@ -41,10 +41,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Tab:StepEnd-Condition-FirstReject' => 'This step finishes on the first rejection, or if 100% approved',
 	'Approval:Tab:StepEnd-Condition-FirstApprove' => 'This step finishes on the first approval, or if 100% rejected',
 	'Approval:Tab:StepEnd-Condition-FirstReply' => 'This step finishes on the first reply',
-
 	'Approval:Tab:Error' => 'An error occured during the approval process: %1$s',
-
-	'Approval:Error:Email' => 'The email could not be sent (%1$s)',
 
 	'Approval:Comment-Label' => 'Your comment',
 	'Approval:Comment-Tooltip' => 'Mandatory for rejection, optional for approval',
@@ -88,7 +85,6 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Remind-DlgTitle' => 'Send a reminder',
 	'Approval:Remind-DlgBody' => 'The following contacts will be notified again:',
 	'Approval:ReminderDone' => 'A reminder has been sent to %1$d person(s).',
-	'Approval:Reminder-Subject' => '%1$s (reminder)',
 
 	'Approval:Portal:Title' => 'Items awaiting your approval',
 	'Approval:Portal:Title+' => 'Please select items to approve and use the buttons located at the bottom of the page',
@@ -104,4 +100,10 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Approval:Portal:Dlg:Reject' => 'Please confirm that you want to reject <em><span class="approval-count">?</span></em> item(s)',
 	'Approval:Portal:Dlg:RejectOne' => 'Please confirm that you want to reject this item',
 	'Approval:Portal:Dlg:Btn:Reject' => 'Reject!',
+
+	'Class:TriggerOnApprovalRequest' => 'Trigger (when an approval is requested)',
+	'Class:TriggerOnApprovalRequest+' => 'Trigger on approval request',
+	'Class:ActionEmailApprovalRequest' => 'Email approval request',
+	'Class:ActionEmailApprovalRequest/Attribute:subject_reminder' => 'Subject (reminder)',
+	'Class:ActionEmailApprovalRequest/Attribute:subject_reminder+' => 'Subject of the email in case a reminder is sent',
 ));

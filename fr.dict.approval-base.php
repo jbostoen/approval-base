@@ -41,10 +41,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Tab:StepEnd-Condition-FirstReject' => 'Etape conclue au premier rejet, ou si approuvée à 100%',
 	'Approval:Tab:StepEnd-Condition-FirstApprove' => 'Etape conclue à la première approbation, ou si rejetée à 100%',
 	'Approval:Tab:StepEnd-Condition-FirstReply' => 'Etape conclue à la première réponse obtenue',
-
 	'Approval:Tab:Error' => 'Une erreur est survenue durant le processus d\'approbation %1$s',
-
-	'Approval:Error:Email' => 'Le mél n\'a pu être envoyé (%1$s)',
 
 	'Approval:Comment-Label' => 'Commentaire',
 	'Approval:Comment-Tooltip' => 'Obligatoire pour pouvoir rejeter, optionnel pour accepter',
@@ -88,7 +85,6 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Remind-DlgTitle' => 'Envoyer une relance',
 	'Approval:Remind-DlgBody' => 'Un mél de relance va être envoyé aux destinataires suivants:',
 	'Approval:ReminderDone' => 'La relance a été faite pour %1$d contact(s).',
-	'Approval:Reminder-Subject' => '%1$s (rappel)',
 
 	'Approval:Portal:Title' => 'Eléments en attente de votre approbation',
 	'Approval:Portal:Title+' => 'Veuillez sélectionner les éléments à approuver, puis utiliser les boutons au bas de la page',
@@ -104,4 +100,9 @@ Dict::Add('FR FR', 'French', 'Français', array(
 	'Approval:Portal:Dlg:Reject' => 'Veuillez confirmer votre refus pour <em><span class="approval-count">?</span></em> élément(s)',
 	'Approval:Portal:Dlg:RejectOne' => 'Veuillez confirmer votre refus pour cet élément',
 	'Approval:Portal:Dlg:Btn:Reject' => 'Rejeter !',
+
+	'Class:TriggerOnApprovalRequest' => 'Déclencheur sur approbation requise',
+	'Class:ActionEmailApprovalRequest' => 'Demande d\'approbation par mél',
+	'Class:ActionEmailApprovalRequest/Attribute:subject_reminder' => 'Sujet (relance)',
+	'Class:ActionEmailApprovalRequest/Attribute:subject_reminder+' => 'Sujet du mél dans le cas d\'une relance',
 ));

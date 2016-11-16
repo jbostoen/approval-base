@@ -161,6 +161,7 @@ abstract class _ApprovalScheme_ extends DBObject
 					}
 					$sRet = '<button id="send_reminder" >'.Dict::S('Approval:Remind-Btn').'</button>';
 					$sRet .= '<div id="send_reminder_dlg">'.Dict::S('Approval:Remind-DlgBody').'<ul><li>'.implode('</li><li>', $aReminders).'</li></ul></div>';
+					$sRet .= '<div id="send_reminder_reply"></div>';
 					$sDialogTitle = addslashes(Dict::S('Approval:Remind-DlgTitle'));
 					$sOkButtonLabel = addslashes(Dict::S('UI:Button:Ok'));
 					$sCancelButtonLabel = addslashes(Dict::S('UI:Button:Cancel'));
@@ -185,6 +186,7 @@ $('#send_reminder_dlg').dialog({
 		oDialog.block();
 		$.post(GetAbsoluteUrlModulesRoot()+'approval-base/ajax.approval.php', oParams, function(data) {
 			me.dialog( "close" );
+			$('#send_reminder_reply').html(data);
 			oDialog.unblock();
 		});
 	} },
@@ -844,7 +846,7 @@ EOF
 						$oApprover = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
 						if ($oApprover)
 						{
-							$this->SendApprovalInvitation($oApprover, $oObject, $aApproverData['passcode']);
+							$this->SendApprovalRequest($oApprover, $oObject, $aApproverData['passcode']);
 						}
 					}
 				}
@@ -1214,7 +1216,7 @@ EOF
 						if ($oApprover)
 						{
 							$oSubstituteTo = MetaModel::GetObject($aApproverData['class'], $aApproverData['id'], false);
-							$this->SendApprovalInvitation($oApprover, $oObject, $aForwardData['passcode'], $oSubstituteTo);
+							$this->SendApprovalRequest($oApprover, $oObject, $aForwardData['passcode'], $oSubstituteTo);
 						}
 					}
 				}
@@ -1391,54 +1393,6 @@ EOF
 		return array($iFoundStep, $bApproved, $sComment);
 	}
 
-	protected function SendEmail($sTitle, $sIntroduction, $sReplyUrl, $sTo, $sFrom, $sReplyTo)
-	{
-		$sBody = '<html>';
-		$sBody .= '<body>';
-		$sBody .= '<h3>'.$sTitle.'</h3>';
-		$sBody .= '<p>'.$sIntroduction.'</p>';
-		$sBody .= '<p>';
-		$sBody .= '<a href="'.$sReplyUrl.'">'.Dict::S('Approval:Action-ApproveOrReject').'</a>';
-		$sBody .= '</p>';
-
-		$sBody .= '</body>';
-		$sBody .= '</html>';
-
-		$oEmail = new EMail();
-		$oEmail->SetSubject($sTitle);
-		$oEmail->SetBody($sBody);
-		try
-		{
-			$oEmail->SetRecipientTO($sTo);
-			$oEmail->SetRecipientFrom($sFrom);
-			$oEmail->SetRecipientReplyTo($sReplyTo);
-
-			$iRes = $oEmail->Send($aIssues);
-			switch ($iRes)
-			{
-				case EMAIL_SEND_OK:
-					break;
-	
-				case EMAIL_SEND_PENDING:
-					break;
-	
-				case EMAIL_SEND_ERROR:
-					$sErrors = implode(', ', $aIssues);
-					$this->Set('last_error', Dict::Format('Approval:Error:Email', $sErrors));
-					break;
-			}
-		}
-		catch (Exception $e)
-		{
-			$sMessage = Dict::Format('Approval:Error:Email', $e->getMessage());
-			if ($oObj = MetaModel::GetObject($this->Get('obj_class'), $this->Get('obj_key'), false))
-			{
-				cmdbAbstractObject::SetSessionMessage(get_class($oObj), $oObj->GetKey(), 'approval-process-exec', Dict::Format('Approval:Tab:Error', $sMessage), 'error', 0);
-			}
-			$this->Set('last_error', $sMessage);
-		}
-	}
-
 	protected function MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
@@ -1499,7 +1453,7 @@ EOF
 		}
 		else
 		{
-			$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oApprover), $oApprover->GetKey()), $aParams);
+			$sIntroduction = MetaModel::ApplyParams($this->GetPublicObjectDetails(get_class($oApprover), $oApprover->GetKey()), $aParams);
 			$oPage->add('<div class="email_body">'.$sIntroduction.'</div>');
 		}
 	}
@@ -1920,3 +1874,100 @@ class CheckApprovalTimeout implements iBackgroundProcess
 }
 
 
+class TriggerOnApprovalRequest extends TriggerOnObject
+{
+	public static function Init()
+	{
+		$aParams = array
+		(
+			"category" => "core/cmdb",
+			"key_type" => "autoincrement",
+			"name_attcode" => "description",
+			"state_attcode" => "",
+			"reconc_keys" => array('description'),
+			"db_table" => "priv_trigger_onapprovalrequest",
+			"db_key_field" => "id",
+			"db_finalclass_field" => "",
+			"display_template" => "",
+		);
+		MetaModel::Init_Params($aParams);
+		MetaModel::Init_InheritAttributes();
+
+		// Display lists
+		MetaModel::Init_SetZListItems('details', array('description', 'target_class', 'filter', 'action_list')); // Attributes to be displayed for the complete details
+		MetaModel::Init_SetZListItems('list', array('finalclass', 'target_class', 'description')); // Attributes to be displayed for a list
+		// Search
+		MetaModel::Init_SetZListItems('standard_search', array('target_class', 'description')); // Criteria of the std search form
+	}
+}
+
+class ActionEmailApprovalRequest extends ActionEmail
+{
+	public static function Init()
+	{
+		$aParams = array
+		(
+			"category" => "core/cmdb,application",
+			"key_type" => "autoincrement",
+			"name_attcode" => "name",
+			"state_attcode" => "",
+			"reconc_keys" => array('name'),
+			"db_table" => "priv_action_emailapprovalrequest",
+			"db_key_field" => "id",
+			"db_finalclass_field" => "",
+			"display_template" => "",
+		);
+		MetaModel::Init_Params($aParams);
+		MetaModel::Init_InheritAttributes();
+
+		MetaModel::Init_AddAttribute(new AttributeTemplateString("subject_reminder", array("allowed_values"=>null, "sql"=>"subject_reminder", "default_value"=>null, "is_null_allowed"=>true, "depends_on"=>array())));
+
+		// Display lists
+		MetaModel::Init_SetZListItems('details', array('name', 'description', 'status', 'test_recipient', 'cc', 'bcc', 'subject', 'subject_reminder', 'body', 'trigger_list'));
+		MetaModel::Init_SetZListItems('list', array('name', 'status', 'subject')); // Attributes to be displayed for a list
+		// Search criteria
+		MetaModel::Init_SetZListItems('standard_search', array('name','description', 'status', 'subject')); // Criteria of the std search form
+	}
+
+	// returns a the list of emails as a string, or a detailed error description
+	protected function FindRecipients($sRecipAttCode, $aArgs)
+	{
+		return parent::FindRecipients($sRecipAttCode, $aArgs);
+	}
+
+
+	public function DoExecute($oTrigger, $aContextArgs)
+	{
+		if (!array_key_exists('approver->object()', $aContextArgs))
+		{
+			throw new Exception('Sorry, an action of type "'.MetaModel::GetName(__CLASS__).'" must be triggered by the mean of a trigger of type "'.MetaModel::GetName('TriggerOnApprovalRequest').'"');
+		}
+		// Hack the current object in memory, so that the email gets correctly prepared
+		// by the standard implementation of ActionEmail
+		// The current action MUST NOT be saved into the DB!!!
+		$oScheme = $aContextArgs['approval_scheme->object()'];
+		$oObject = $aContextArgs['this->object()'];
+		$oApprover = $aContextArgs['approver->object()'];
+		$sTo = 'SELECT '.get_class($oApprover).' WHERE id = '.$oApprover->GetKey();
+		$this->Set('to', $sTo);
+		$this->Set('from', $oScheme->GetEmailSender($oApprover, $oObject));
+		$this->Set('reply_to', $oScheme->GetEmailReplyTo($oApprover, $oObject));
+		if (($aContextArgs['message_type'] == 'reminder'))
+		{
+			$sReminderSubject = trim($this->Get('subject_reminder'));
+			if ($this->Get('subject_reminder') !== '')
+			{
+				$this->Set('subject', $sReminderSubject);
+			}
+		}
+		return parent::DoExecute($oTrigger, $aContextArgs);
+	}
+
+	public function ComputeValues()
+	{
+		// Initialize mandatory value(s)
+		$this->Set('from', 'nobody@no.where.org');
+		return parent::ComputeValues();
+	}
+
+}

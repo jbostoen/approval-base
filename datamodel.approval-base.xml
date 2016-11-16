@@ -132,41 +132,6 @@
             return null;
             }</code>
         </method>
-        <method id="GetEmailSubject">
-          <comment>/**&#13;
-            * Called when the email is being created for a given approver&#13;
-            * 	 &#13;
-            * @param string sContactClass The approver object class&#13;
-            * @param string iContactId The approver object id&#13;
-            * @return string The subject in pure text&#13;
-            */</comment>
-          <static>false</static>
-          <access>public</access>
-          <type>OQLMenuNode</type>
-          <code>	abstract public function GetEmailSubject($sContactClass, $iContactId);</code>
-        </method>
-        <method id="GetReminderSubject">
-          <static>false</static>
-          <access>public</access>
-          <type>OQLMenuNode</type>
-          <code><![CDATA[	public function GetReminderSubject($sContactClass, $iContactId)
-	{
-		return Dict::Format('Approval:Reminder-Subject', $this->GetEmailSubject($sContactClass, $iContactId));
-	}]]></code>
-        </method>
-        <method id="GetEmailBody">
-          <comment>/**&#13;
-            * Called when the email is being created for a given approver&#13;
-            * 	 &#13;
-            * @param string sContactClass The approver object class&#13;
-            * @param string iContactId The approver object id&#13;
-            * @return string The email body in HTML&#13;
-            */</comment>
-          <static>false</static>
-          <access>public</access>
-          <type>OQLMenuNode</type>
-          <code>	abstract public function GetEmailBody($sContactClass, $iContactId);</code>
-        </method>
         <method id="GetFormBody">
           <comment>/**&#13;
             * Called when the form is being created for a given approver&#13;
@@ -180,7 +145,7 @@
           <type>OQLMenuNode</type>
           <code><![CDATA[	public function GetFormBody($sContactClass, $iContactId)
 	{
-		return $this->GetEmailSubject($sContactClass, $iContactId);
+		return 'this is the form body... to be overriden!';
 	}]]></code>
         </method>
         <method id="DoApprove">
@@ -373,54 +338,38 @@
 		return $sAbortUrl;
 	}	 	]]></code>
         </method>
-        <method id="SendApprovalInvitation">
+        <method id="SendApprovalRequest">
           <comment>/**&#13;
             * Build and send the message for a given approver (can be a forwarded approval request)&#13;
             */</comment>
           <static>false</static>
           <access>public</access>
           <type>OQLMenuNode</type>
-          <code><![CDATA[	public function SendApprovalInvitation($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null)
+          <code><![CDATA[	public function SendApprovalRequest($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null, $bReminder = false)
 	{
-		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
-
-		$sTitle = MetaModel::ApplyParams($this->GetEmailSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
 		$sReplyUrl = $this->MakeReplyUrl(get_class($oToPerson), $oToPerson->GetKey(), false);
+		$sReplyLink = '<a href="'.$sReplyUrl.'">'.Dict::S('Approval:Action-ApproveOrReject').'</a>';
 
-		$this->SendEmail(
-			$sTitle,
-			$sIntroduction,
-			$sReplyUrl,
-			$this->GetApproverEmailAddress($oToPerson),
-			$this->GetEmailSender($oToPerson, $oObj),
-			$this->GetEmailReplyTo($oToPerson, $oObj)
+		$aContext = array(
+			'this->object()' => $oObj,
+			'approval_scheme->object()' => $this,
+			'approval_step' => $this->Get('current_step') + 1,
+			'approver->object()' => $oToPerson,
+			'approver_type' => is_null($oSubstituteTo) ? 'main' : 'substitute',
+			'approval_url' => $sReplyUrl,
+			'approval_link' => $sReplyLink,
+			'message_type' => $bReminder ? 'reminder' : 'initial',
 		);
-	}]]></code>
-        </method>
-        <method id="SendApprovalReminder">
-          <comment>/**&#13;
-            * Build and send the REMINDER for a given approver (can be a forwarded approval request)&#13;
-            */</comment>
-          <static>false</static>
-          <access>public</access>
-          <type>OQLMenuNode</type>
-          <code><![CDATA[	public function SendApprovalReminder($oToPerson, $oObj, $sPassCode, $oSubstituteTo = null)
-	{
-		$aParams = array_merge($oObj->ToArgs('object'), $oToPerson->ToArgs('approver'));
-
-		$sTitle = MetaModel::ApplyParams($this->GetReminderSubject(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sIntroduction = MetaModel::ApplyParams($this->GetEmailBody(get_class($oToPerson), $oToPerson->GetKey()), $aParams);
-		$sReplyUrl = $this->MakeReplyUrl(get_class($oToPerson), $oToPerson->GetKey(), false);
-
-		$this->SendEmail(
-			$sTitle,
-			$sIntroduction,
-			$sReplyUrl,
-			$this->GetApproverEmailAddress($oToPerson),
-			$this->GetEmailSender($oToPerson, $oObj),
-			$this->GetEmailReplyTo($oToPerson, $oObj)
-		);
+		if (!is_null($oSubstituteTo))
+		{
+			$aContext['on_behalf_of'] = $oSubstituteTo;
+		}
+		$sClassList = implode("', '", MetaModel::EnumParentClasses(get_class($oObj), ENUM_PARENT_CLASSES_ALL));
+		$oSet = new DBObjectSet(DBObjectSearch::FromOQL("SELECT TriggerOnApprovalRequest AS t WHERE t.target_class IN ('$sClassList')"));
+		while ($oTrigger = $oSet->Fetch())
+		{
+			$oTrigger->DoActivate($aContext);
+		}
 	}]]></code>
         </method>
         <method id="GetApproverEmailAddress">
