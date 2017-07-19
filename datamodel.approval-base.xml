@@ -266,7 +266,8 @@
 					$oAttDef = MetaModel::GetAttributeDef($this->Get('obj_class'), $sAttCode);
 					if ($oAttDef instanceof AttributeCaseLog)
 					{
-						$value->AddLogEntry($sComment, $sIssuerInfo);
+						$sHtml = utils::TextToHtml($sComment);
+						$value->AddLogEntry($sHtml, $sIssuerInfo);
 					}
 					else
 					{
