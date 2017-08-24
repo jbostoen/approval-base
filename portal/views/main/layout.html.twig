@@ -159,7 +159,7 @@
 					} );
 
 					$('.approval-item-select-all').on('change', function(){
-						$(this).closest('table').find('.approval-item-select').prop('checked', $('.approval-item-select-all').prop('checked'));
+						$(this).closest('table').find('.approval-item-select').prop('checked', $(this).prop('checked'));
 						EnableApprovalButtons();
 					});
 					$('.approval-item-select').on("change", function(){
