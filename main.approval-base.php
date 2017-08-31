@@ -138,6 +138,41 @@ abstract class _ApprovalScheme_ extends DBObject
 	}
 
 	/**
+	 * Alternative to AddStep: Adds a step IIF the query returns at least one approver
+	 *
+	 * @param DBObject $oObject The source object (query arguments :this->attcode)
+	 * @param string $sApproversQuery OQL giving the approvers
+	 * @param integer $iTimeoutSec The timeout duration if (0 to disable the timeout feature)
+	 * @param boolean $bApproveOnTimeout Set to true to approve in case of timeout for the current step
+	 * @param integer $iExitCondition EXIT_ON_... _FIRST_REJECT, _FIRST_APPROVE, _FIRST_REPLY defaults to the legacy behavior
+	 * @param boolean $bReusePreviousAnswers Set to true to recycle an answer given by an approver at a previous step (if any)
+	 * @return bool true if a step has been added
+	 */
+	public function AddStepFromQuery(DBObject $oObject, $sApproversQuery, $iTimeoutSec = 0, $bApproveOnTimeout = true, $iExitCondition = self::EXIT_ON_FIRST_REJECT, $bReusePreviousAnswers = true)
+	{
+		$bRet = false;
+		if ($sApproversQuery != '')
+		{
+			$oApproverSet = new DBObjectSet(DBObjectSearch::FromOQL($sApproversQuery), array(), $oObject->ToArgs('this'));
+			if ($oApproverSet->count() != 0)
+			{
+				$bRet = true;
+				$aContacts = array();
+				while ($oApprover = $oApproverSet->Fetch())
+				{
+					$sType = get_class($oApprover);
+					$aContacts[] = array(
+						'class' => $sType,
+						'id' => $oApprover->GetKey(),
+					);
+				}
+				$this->AddStep($aContacts, $iTimeoutSec, $bApproveOnTimeout, $iExitCondition, $bReusePreviousAnswers);
+			}
+		}
+		return $bRet;
+	}
+
+	/**
 	 * Helper to build the button and associated dialog, if relevant, enabled, etc.
 	 */	 	
 	protected function GetReminderButton($oPage, $aStepData)
