@@ -34,6 +34,14 @@
             <attribute id=""/>
           </attributes>
         </reconciliation>
+        <indexes>
+          <index id="1">
+            <attributes>
+              <attribute id="obj_class"/>
+              <attribute id="obj_key"/>
+            </attributes>
+          </index>
+        </indexes>
       </properties>
       <fields>
         <field id="obj_class" xsi:type="AttributeString">
@@ -41,10 +49,10 @@
           <default_value></default_value>
           <is_null_allowed>false</is_null_allowed>
         </field>
-        <field id="obj_key" xsi:type="AttributeInteger">
+        <field id="obj_key" xsi:type="AttributeObjectKey">
           <sql>obj_key</sql>
-          <default_value></default_value>
           <is_null_allowed>false</is_null_allowed>
+          <class_attcode>obj_class</class_attcode>
         </field>
         <field id="started" xsi:type="AttributeDateTime">
           <sql>started</sql>
