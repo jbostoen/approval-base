@@ -506,7 +506,8 @@ EOF
 				}
 				if (array_key_exists('approval', $aApproverData))
 				{
-					$bApproved = $aApproverData['approval'];
+                    $bApproved = $aApproverData['approval'];
+					$sAnwserTimestamp = $aApproverData['answer_time'];
 					$sTitleHtml = $this->GetDisplayTime($aApproverData['answer_time']);
 					if (isset($aApproverData['comment']) && $aApproverData['comment'] != '')
 					{
@@ -523,11 +524,12 @@ EOF
 					$sTitleEsc = addslashes($sTitleHtml);
 					// Not working in iTop <= 2.0.1
 					//$oPage->add_ready_script("$('#answer_$iStep"."_".$aApproverData['id']."').tooltip({items: 'div>img', content: '$sTitleEsc'});");
-					$oPage->add_ready_script("$('#answer_$iStep"."_".$aApproverData['id']."').qtip( { content: '$sTitleEsc', show: 'mouseover', hide: 'mouseout', style: { name: 'dark', tip: 'leftTop' }, position: { corner: { target: 'rightMiddle', tooltip: 'leftTop' }} } );");
+					$oPage->add_ready_script("$('#answer_$iStep"."_".$aApproverData['id']."_".$sAnwserTimestamp."').qtip( { content: '$sTitleEsc', show: 'mouseover', hide: 'mouseout', style: { name: 'dark', tip: 'leftTop' }, position: { corner: { target: 'rightMiddle', tooltip: 'leftTop' }} } );");
 				}
 				else
 				{
-					$sAnswer = "<img src=\"$sImgOngoing\">";
+                    $sAnswer = "<img src=\"$sImgOngoing\">";
+					$sAnwserTimestamp = '0';
 					if (($aStepData['status'] == 'ongoing') && !array_key_exists('forward', $aApproverData))
 					{
 						// Surround the icon with some meta data to allow a reply here
@@ -622,7 +624,7 @@ EOF
 				if (strlen($sAnswer) > 0)
 				{
 					$sTriangle = "<img src=\"$sImgBubbleTriangle\">";
-					$sStepHtml .= '<td style="vertical-align: top;"><div class="approver-answer" id="answer_'.$iStep.'_'.$aApproverData['id'].'">'.$sTriangle.$sAnswer.'</div></td>';
+					$sStepHtml .= '<td style="vertical-align: top;"><div class="approver-answer" id="answer_'.$iStep.'_'.$aApproverData['id'].'_'.$sAnwserTimestamp.'">'.$sTriangle.$sAnswer.'</div></td>';
 				}
 				else
 				{
