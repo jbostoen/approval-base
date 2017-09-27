@@ -40,7 +40,7 @@ class ApprovalBrick extends PortalBrick
 	const DEFAULT_NAVIGATION_MENU_ICON_CLASS = 'fa fa-check-circle fa-2x';
 	const DEFAULT_PAGE_TEMPLATE_PATH = 'approval-base/portal/views/main/layout.html.twig';
 	//const DEFAULT_DATA_LOADING = self::ENUM_DATA_LOADING_LAZY;
-	//const DEFAULT_COUNT_PER_PAGE_LIST = 20;
+	//const DEFAULT_LIST_LENGTH = 20;
 	const DEFAULT_ZLIST_FIELDS = 'list';
 
 	static $sRouteName = 'p_approval_brick';
