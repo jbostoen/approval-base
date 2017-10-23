@@ -74,13 +74,18 @@ function DoShowOngoing($oP, $sClass)
 		$sDisabled = 'DISABLED';
 	}
 	$oAppContext = new ApplicationContext();
-	$sReport = utils::GetAbsoluteUrlModulePage('approval-base', 'report.php');
-	$oP->add('<form id="filter_approvals" action="'.$sReport.'" method="post">');
-	$oP->add($oAppContext->GetForForm());
+	$sReport = utils::GetAbsoluteUrlExecPage();
+	// the form uses GET to allow for example archive mode toogling to work (see N.1108)
+	$oP->add('<form id="filter_approvals" action="'.$sReport.'" method="get">');
+	$aExecPageArgs = utils::GetExecPageArguments('approval-base', 'report.php');
+	foreach($aExecPageArgs as $sName => $sValue) {
+		$oP->add('<input type="hidden" name="'.$sName.'" value="'.$sValue.'">');
+	}
 	$oP->add('<input type="hidden" name="class" value="'.$sClass.'">');
 	$sChecked = $bFilter ? 'CHECKED' : '';
 	$oP->add('<input id="do_filter_my_approvals" name="do_filter_my_approvals" type="checkbox" '.$sChecked.' '.$sDisabled.'>');
 	$oP->add('<label for="do_filter_my_approvals">'.Dict::S('Approval:Ongoing-FilterMyApprovals').'</label>');
+	$oP->add($oAppContext->GetForForm());
 	$oP->add('</form>');
 	$oP->add_ready_script(
 <<<EOF
