@@ -36,8 +36,8 @@ use MetaModel;
  */
 class ApprovalBrick extends PortalBrick
 {
-	const DEFAULT_HOME_ICON_CLASS = 'fa fa-check-circle';
-	const DEFAULT_NAVIGATION_MENU_ICON_CLASS = 'fa fa-check-circle fa-2x';
+	const DEFAULT_DECORATION_CLASS_HOME = 'fa fa-check-circle';
+	const DEFAULT_DECORATION_CLASS_NAVIGATION_MENU = 'fa fa-check-circle fa-2x';
 	const DEFAULT_PAGE_TEMPLATE_PATH = 'approval-base/portal/views/main/layout.html.twig';
 	//const DEFAULT_DATA_LOADING = self::ENUM_DATA_LOADING_LAZY;
 	//const DEFAULT_LIST_LENGTH = 20;
