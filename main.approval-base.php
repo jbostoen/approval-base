@@ -1888,7 +1888,7 @@ class CheckApprovalTimeout implements iBackgroundProcess
 
 	public function Process($iTimeLimit)
 	{
-		CMDBObject::SetTrackInfo("Automatic timeout");
+		CMDBObject::SetTrackInfo("Automatic - Background task check approval timeout");
 
       $aReport = array();
 
