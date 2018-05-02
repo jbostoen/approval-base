@@ -1917,7 +1917,7 @@ class TriggerOnApprovalRequest extends TriggerOnObject
 	{
 		$aParams = array
 		(
-			"category" => "core/cmdb",
+			"category" => "core/cmdb,application",
 			"key_type" => "autoincrement",
 			"name_attcode" => "description",
 			"state_attcode" => "",
