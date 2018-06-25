@@ -1888,7 +1888,7 @@ class CheckApprovalTimeout implements iBackgroundProcess
 
 	public function Process($iTimeLimit)
 	{
-		CMDBObject::SetTrackInfo("Automatic timeout");
+		CMDBObject::SetTrackInfo("Automatic - Background task check approval timeout");
 
       $aReport = array();
 
@@ -1917,7 +1917,7 @@ class TriggerOnApprovalRequest extends TriggerOnObject
 	{
 		$aParams = array
 		(
-			"category" => "core/cmdb",
+			"category" => "core/cmdb,application",
 			"key_type" => "autoincrement",
 			"name_attcode" => "description",
 			"state_attcode" => "",
