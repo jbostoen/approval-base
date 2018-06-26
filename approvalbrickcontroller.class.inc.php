@@ -1,6 +1,6 @@
 <?php
 
-// Copyright (C) 2010-2016 Combodo SARL
+// Copyright (C) 2010-2018 Combodo SARL
 //
 //   This file is part of iTop.
 //
@@ -20,32 +20,23 @@
 namespace Combodo\iTop\Portal\Controller;
 
 // todo: est-ce la bonne méthode pour gérer les includes, où se trouve l'autoload ?
+// The module should have a dependency to itop-portal-base, so its file are loaded AFTER the portal files.
 require_once(MODULESROOT.'itop-portal-base/portal/src/controllers/abstractcontroller.class.inc.php');
 require_once(MODULESROOT.'itop-portal-base/portal/src/controllers/brickcontroller.class.inc.php');
 
-use \Silex\Application;
-use \Symfony\Component\HttpFoundation\Request;
-use \UserRights;
-use \CMDBSource;
-use \IssueLog;
-use \MetaModel;
-use \AttributeDefinition;
-use \AttributeDate;
-use \AttributeDateTime;
-use \DBSearch;
-use \DBObjectSearch;
-use \DBObjectSet;
-use \FieldExpression;
-use \BinaryExpression;
-use \VariableExpression;
-use \SQLExpression;
-use \UnaryExpression;
-use \Dict;
-use \Combodo\iTop\Portal\Controller\ObjectController;
-use \Combodo\iTop\Portal\Helper\ApplicationHelper;
-use \Combodo\iTop\Portal\Helper\SecurityHelper;
-use \Combodo\iTop\Portal\Brick\AbstractBrick;
-use \Combodo\iTop\Portal\Brick\ApprovalBrick;
+use Silex\Application;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use UserRights;
+use IssueLog;
+use MetaModel;
+use AttributeDate;
+use AttributeDateTime;
+use DBSearch;
+use DBObjectSet;
+use Dict;
+use ApprovalScheme;
+use Combodo\iTop\Portal\Helper\ApplicationHelper;
 
 class ApprovalBrickController extends BrickController
 {
@@ -86,7 +77,7 @@ class ApprovalBrickController extends BrickController
 			}
 		}
 
-		$aApprovals = \ApprovalScheme::ListOngoingApprovals(get_class($oMyself), $oMyself->GetKey());
+		$aApprovals = ApprovalScheme::ListOngoingApprovals(get_class($oMyself), $oMyself->GetKey());
 		$aObjects = array();
 		foreach ($aApprovals as $oApproval)
 		{
@@ -225,5 +216,69 @@ class ApprovalBrickController extends BrickController
 
 		return $oResponse;
 	}
+
+    /**
+     * Handles attachment download on an object under approval.
+     *
+     * Note: This doesn't use the ObjectController::AttachmentAction() because Attachments might be linked to objects that are not allowed to the current user's scopes.
+     *
+     * @param Request $oRequest
+     * @param Application $oApp
+     * @param string $sAttachmentId
+     */
+    public function AttachmentAction(Request $oRequest, Application $oApp, $sAttachmentId)
+    {
+        // Check if attachment exists
+        $oAttachment = MetaModel::GetObject('Attachment', $sAttachmentId, false, true);
+        if($oAttachment === null)
+        {
+            // We should never be there as the secuirty helper makes sure that the object exists, but just in case.
+            IssueLog::Info(__METHOD__ . ' at line ' . __LINE__ . ' : Could not load attachment #' . $sAttachmentId . '.');
+            $oApp->abort(404, Dict::S('UI:ObjectDoesNotExist'));
+        }
+
+        $sLinkedObjClass = $oAttachment->Get('item_class');
+        $iLinkedObjId = $oAttachment->Get('item_id');
+        $oCurrentContact = UserRights::GetContactObject();
+
+        // Check if attachment linked to object in approval scope
+        $aApprovals = ApprovalScheme::ListOngoingApprovals(get_class($oCurrentContact), $oCurrentContact->GetKey());
+        $aObjects = array();
+        $bFound = false;
+        foreach ($aApprovals as $oApproval)
+        {
+            $sObjClass = $oApproval->Get('obj_class');
+            $iObjKey = $oApproval->Get('obj_key');
+            if( ($sObjClass === $sLinkedObjClass) && ($iObjKey == $iLinkedObjId) )
+            {
+                $bFound = true;
+                break;
+            }
+        }
+
+        if(!$bFound)
+        {
+            IssueLog::Info(__METHOD__ . ' at line ' . __LINE__ . ' : Attachment #' . $sAttachmentId . ' not linked to an object in Contact #' . $oCurrentContact->GetKey() . ' approval schemes.');
+            $oApp->abort(404, Dict::S('UI:ObjectDoesNotExist'));
+        }
+
+        // Prepare response
+        // - One year ahead: an attachement cannot change
+        $iCacheSec = 31556926;
+        $aHeaders = array();
+        $aHeaders['Expires'] = '';
+        $aHeaders['Cache-Control'] = 'no-transform, public,max-age='.$iCacheSec.',s-maxage='.$iCacheSec;
+        // Reset the value set previously
+        $aHeaders['Pragma'] = 'cache';
+        // An arbitrary date in the past is ok
+        $aHeaders['Last-Modified'] = 'Wed, 15 Jun 2015 13:21:15 GMT';
+
+        /** @var \ormDocument $oDocument */
+        $oDocument = $oAttachment->Get('contents');
+        $aHeaders['Content-Type'] = $oDocument->GetMimeType();
+        $aHeaders['Content-Disposition'] = 'attachment;filename="'.$oDocument->GetFileName().'"';
+
+        return new Response($oDocument->GetData(), Response::HTTP_OK, $aHeaders);
+    }
 
 }

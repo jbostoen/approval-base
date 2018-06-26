@@ -1,6 +1,6 @@
 <?php
 
-// Copyright (C) 2010-2016 Combodo SARL
+// Copyright (C) 2010-2018 Combodo SARL
 //
 //   This file is part of iTop.
 //
@@ -20,6 +20,7 @@
 namespace Combodo\iTop\Portal\Router;
 
 // todo: est-ce la bonne méthode pour gérer les includes, où se trouve l'autoload ?
+// The module should have a dependency to itop-portal-base, so its file are loaded AFTER the portal files.
 require_once(MODULESROOT.'itop-portal-base/portal/src/routers/abstractrouter.class.inc.php');
 
 use Silex\Application;
@@ -35,8 +36,10 @@ class ApprovalBrickRouter extends AbstractRouter
 			'callback' => 'Combodo\\iTop\\Portal\\Controller\\ApprovalBrickController::ViewObjectAction',
 			'bind' => 'p_approval_view_object'
 		),
+        array('pattern' => '/approval/attachment/download/{sAttachmentId}',
+            'callback' => 'Combodo\\iTop\\Portal\\Controller\\ApprovalBrickController::AttachmentAction',
+            'bind' => 'p_approval_attachment_download',
+        ),
 	);
 
 }
-
-?>
