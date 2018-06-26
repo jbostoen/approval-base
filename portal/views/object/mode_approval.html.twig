@@ -54,7 +54,15 @@
 			$('#{{ sFormId }}').closest('.modal').scrollTop(0);
 			$('#{{ sFormId }}').closest('.modal').find('.modal-footer').hide();
 		{% endif %}
-			
+
+		// Overriding attachment URLs
+		oFieldSet_{{  sFormIdSanitized }}.find('.fileupload_field_content .attachment > a').each(function(oElem){
+			var sId = $(this).find('input[type="hidden"][id^="attachment_"]').val();
+            var sCurrentUrl = $(this).attr('href');
+			var sNewUrl = '{{ app['url_generator'].generate('p_approval_attachment_download', {sAttachmentId: '-sAttachmentId-'})|raw }}'.replace(/-sAttachmentId-/, sId);
+
+			$(this).attr('href', sNewUrl);
+		});
 		
 		function EnableApprovalButtonsForThisApproval()
 		{
