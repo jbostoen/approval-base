@@ -91,21 +91,21 @@
 			var bHasSelection = ($('.approval-item-select:checked').length > 0);
 			if (bHasSelection)
 			{
-				$('#btn-approve').removeAttr('disabled');
+				$('#btn-approve').prop('disabled', false);
 				var bHasComment = ($('#approval-comment').val().length > 0);
 				if (bHasComment)
 				{
-					$('#btn-reject').removeAttr('disabled');
+					$('#btn-reject').prop('disabled', false);
 				}
 				else
 				{
-					$('#btn-reject').attr('disabled', 'disabled');
+					$('#btn-reject').prop('disabled', true);
 				}
 			}
 			else
 			{
-				$('#btn-approve').attr('disabled', 'disabled');
-				$('#btn-reject').attr('disabled', 'disabled');
+				$('#btn-approve').prop('disabled', true);
+				$('#btn-reject').prop('disabled', true);
 			}
 		}
 

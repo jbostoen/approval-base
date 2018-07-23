@@ -69,11 +69,11 @@
 			var bHasComment = ($('#approval-comment-one').val().length > 0);
 			if (bHasComment)
 			{
-				$('#btn-reject-one').removeAttr('disabled');
+				$('#btn-reject-one').prop('disabled', false);
 			}
 			else
 			{
-				$('#btn-reject-one').attr('disabled', 'disabled');
+				$('#btn-reject-one').prop('disabled', true);
 			}
 		}
 		
