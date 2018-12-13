@@ -307,6 +307,11 @@ try
 		$sModule = utils::GetAbsoluteUrlModulesRoot().'approval-base';
 		$oP->add_style(
 <<<EOF
+#comment{
+	display: block;
+	margin-bottom: 15px;
+	min-height: 150px;
+}
 #approval-button {
     background: url("$sModule/approve.png") no-repeat scroll 10px center rgba(0, 0, 0, 0);
 }
