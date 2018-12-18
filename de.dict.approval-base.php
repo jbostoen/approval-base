@@ -13,7 +13,6 @@
 //   You should have received a copy of the GNU General Public License
 //   along with this program; if not, write to the Free Software
 //   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
 /**
  * Localized data
  *
@@ -22,11 +21,10 @@
  * @author      Denis Flaven <denis.flaven@combodo.com>
  * @license     http://www.opensource.org/licenses/gpl-3.0.html LGPL
  */
-
 Dict::Add('DE DE', 'German', 'Deutsch', array(
-	'Approval:Tab:Title' => 'Status der Genehmigung',	
+	'Approval:Tab:Title' => 'Status der Genehmigung',
 	'Approval:Tab:Start' => 'Start',
-	'Approval:Tab:End' => 'Ende',	
+	'Approval:Tab:End' => 'Ende',
 	'Approval:Tab:StepEnd-Limit' => 'Zeitlimit (Implizites Ergebnis)',
 	'Approval:Tab:StepEnd-Theoretical' => 'Theoretisches Zeitlimit (Dauer begrenzt auf %1$s mn)',
 	'Approval:Tab:StepSumary-Ongoing' => 'Warten auf Antwort',
@@ -51,7 +49,6 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
 	'Approval:Action-Reject' => 'Ablehnen',
 	'Approval:Action-ApproveOrReject' => 'Genehmigen oder Ablehnen',
 	'Approval:Action-Abort' => 'Genehmigungsprozess übergehen',
-	'Approval:Action-ViewMoreInfo' => 'Mehr Informationen ansehen', // Not used anymore?
 
 	'Approval:Form:Title' => 'Genehmigung',
 	'Approval:Form:Ref' => 'Genhemigungsprozess für %1$s',
@@ -59,7 +56,7 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
 	'Approval:Form:ApproverDeleted' => 'Der zu ihrer Identität gehörende Datensatz wurde gelöscht.',
 	'Approval:Form:ObjectDeleted' => 'Das zu genehmigende Objekt wurde in iTop gelöscht.',
 
-	'Approval:Form:AnswerGivenBy' => 'Entschuldigung, die Rückmeldung erfolgte bereits durch \'%1$s\'',
+	'Approval:Form:AnswerGivenBy' => 'Entschuldigung, die Rückmeldung erfolgte bereits durch \'%1$s\'', 
 	'Approval:Form:AlreadyApproved' => 'Der Prozess wurde bereits mit dem Ergebniss "Genehmigt" abgeschlossen.',
 	'Approval:Form:AlreadyRejected' => 'Der Prozess wurde bereits mit dem Ergebnis "Abgelehnt" abgeschlossen.',
 
@@ -76,7 +73,6 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
 	'Approval:Rejected-On-behalf-of' => 'Abgelehnt von %1$s im Auftrag von %2$s',
 	'Approval:Approved-By' => 'Genehmigt von %1$s',
 	'Approval:Rejected-By' => 'Abgelehnt von %1$s',
-	'Approval:ChangeTracking-MoreInfo' => 'Genehmigungsprozess', // Not used anymore?
 
 	'Approval:Ongoing-Title' => 'laufende Freigaben',
 	'Approval:Ongoing-Title+' => 'Freigabe Prozesse für Objekte der Klasse %1$s',
@@ -87,6 +83,21 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
 	'Approval:Remind-DlgTitle' => 'Erinnerung versenden',
 	'Approval:Remind-DlgBody' => 'Die folgenden Kontakte werden erneut benachrichtigt:',
 	'Approval:ReminderDone' => 'Eine Erinnerung wurde an %1$d Personen versandt.',
+
+	'Approval:Portal:Title' => 'Items awaiting your approval~~',
+	'Approval:Portal:Title+' => 'Please select items to approve and use the buttons located at the bottom of the page~~',
+	'Approval:Portal:NoItem' => 'There is currently no item expecting your approval~~',
+	'Approval:Portal:Btn:Approve' => 'Approve~~',
+	'Approval:Portal:Btn:Reject' => 'Reject~~',
+	'Approval:Portal:CommentTitle' => 'Approval comment (mandatory in case of reject)~~',
+	'Approval:Portal:CommentPlaceholder' => '~~',
+	'Approval:Portal:Success' => 'Your feedback has been recorded.~~',
+	'Approval:Portal:Dlg:Approve' => 'Please confirm that you want to approve <em><span class="approval-count">?</span></em> item(s)~~',
+	'Approval:Portal:Dlg:ApproveOne' => 'Please confirm that you want to approve this item~~',
+	'Approval:Portal:Dlg:Btn:Approve' => 'Approve!~~',
+	'Approval:Portal:Dlg:Reject' => 'Please confirm that you want to reject <em><span class="approval-count">?</span></em> item(s)~~',
+	'Approval:Portal:Dlg:RejectOne' => 'Please confirm that you want to reject this item~~',
+	'Approval:Portal:Dlg:Btn:Reject' => 'Reject!~~',
 
 	'Class:TriggerOnApprovalRequest' => 'Trigger (wenn eine Freigabe angefordert wird)~~',
 	'Class:TriggerOnApprovalRequest+' => 'Trigger bei Freigabeanforderung',
