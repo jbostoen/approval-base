@@ -20,7 +20,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with iTop. If not, see <http://www.gnu.org/licenses/>
  */
-
 Dict::Add('JA JP', 'Japanese', '日本語', array(
 	'Approval:Tab:Title' => 'Approval status~~',
 	'Approval:Tab:Start' => 'Start~~',
@@ -104,4 +103,45 @@ Dict::Add('JA JP', 'Japanese', '日本語', array(
 	'Class:ActionEmailApprovalRequest' => 'Email approval request~~',
 	'Class:ActionEmailApprovalRequest/Attribute:subject_reminder' => 'Subject (reminder)~~',
 	'Class:ActionEmailApprovalRequest/Attribute:subject_reminder+' => 'Subject of the email in case a reminder is sent~~',
+));
+
+//
+// Class: ApprovalScheme
+//
+
+Dict::Add('JA JP', 'Japanese', '日本語', array(
+	'Class:ApprovalScheme' => 'ApprovalScheme~~',
+	'Class:ApprovalScheme+' => '~~',
+	'Class:ApprovalScheme/Attribute:obj_class' => 'Obj class~~',
+	'Class:ApprovalScheme/Attribute:obj_class+' => '~~',
+	'Class:ApprovalScheme/Attribute:obj_key' => 'Obj key~~',
+	'Class:ApprovalScheme/Attribute:obj_key+' => '~~',
+	'Class:ApprovalScheme/Attribute:started' => 'Started~~',
+	'Class:ApprovalScheme/Attribute:started+' => '~~',
+	'Class:ApprovalScheme/Attribute:ended' => 'Ended~~',
+	'Class:ApprovalScheme/Attribute:ended+' => '~~',
+	'Class:ApprovalScheme/Attribute:timeout' => 'Timeout~~',
+	'Class:ApprovalScheme/Attribute:timeout+' => '~~',
+	'Class:ApprovalScheme/Attribute:current_step' => 'Current step~~',
+	'Class:ApprovalScheme/Attribute:current_step+' => '~~',
+	'Class:ApprovalScheme/Attribute:status' => 'Status~~',
+	'Class:ApprovalScheme/Attribute:status+' => '~~',
+	'Class:ApprovalScheme/Attribute:status/Value:ongoing' => 'Ongoing~~',
+	'Class:ApprovalScheme/Attribute:status/Value:ongoing+' => '~~',
+	'Class:ApprovalScheme/Attribute:status/Value:accepted' => 'Accepted~~',
+	'Class:ApprovalScheme/Attribute:status/Value:accepted+' => '~~',
+	'Class:ApprovalScheme/Attribute:status/Value:rejected' => 'Rejected~~',
+	'Class:ApprovalScheme/Attribute:status/Value:rejected+' => '~~',
+	'Class:ApprovalScheme/Attribute:last_error' => 'Last error~~',
+	'Class:ApprovalScheme/Attribute:last_error+' => '~~',
+	'Class:ApprovalScheme/Attribute:abort_comment' => 'Abort comment~~',
+	'Class:ApprovalScheme/Attribute:abort_comment+' => '~~',
+	'Class:ApprovalScheme/Attribute:abort_user_id' => 'Abort user id~~',
+	'Class:ApprovalScheme/Attribute:abort_user_id+' => '~~',
+	'Class:ApprovalScheme/Attribute:abort_date' => 'Abort date~~',
+	'Class:ApprovalScheme/Attribute:abort_date+' => '~~',
+	'Class:ApprovalScheme/Attribute:label' => 'Label~~',
+	'Class:ApprovalScheme/Attribute:label+' => '~~',
+	'Class:ApprovalScheme/Attribute:steps' => 'Steps~~',
+	'Class:ApprovalScheme/Attribute:steps+' => '~~',
 ));

@@ -48,6 +48,7 @@ try
 		{
 			$iSchemeId = utils::ReadParam('approval_id', 0);
 			$iStep = utils::ReadParam('step', 0);
+			$bEditMode = utils::ReadParam('edit_mode', 0);
 
 			$oScheme = MetaModel::GetObject('ApprovalScheme', $iSchemeId, false);
 			if (!$oScheme)
@@ -97,7 +98,7 @@ try
 				}
 			}
 			$oPage->add(Dict::Format('Approval:ReminderDone', $Sent));
-			if ($Sent > 0)
+			if (($Sent > 0) && !$bEditMode)
 			{
 				// Reload the object details so as to refresh the notifications tab
 				$oPage->add_script("window.location.reload();");

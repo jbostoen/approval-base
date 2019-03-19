@@ -175,7 +175,7 @@ abstract class _ApprovalScheme_ extends DBObject
 	/**
 	 * Helper to build the button and associated dialog, if relevant, enabled, etc.
 	 */	 	
-	protected function GetReminderButton($oPage, $aStepData)
+	protected function GetReminderButton($oPage, $aStepData, $bEditMode = false)
 	{
 		$sRet = '';
 		if (MetaModel::GetModuleSetting('approval-base', 'enable_reminder', true))
@@ -202,6 +202,7 @@ abstract class _ApprovalScheme_ extends DBObject
 					$sCancelButtonLabel = addslashes(Dict::S('UI:Button:Cancel'));
 					$iApproval = $this->GetKey();
 					$iCurrentStep = $this->Get('current_step');
+					$iEditMode = $bEditMode ? 1 : 0;
 					$oPage->add_ready_script(
 <<<EOF
 $('#send_reminder_dlg').dialog({
@@ -217,6 +218,7 @@ $('#send_reminder_dlg').dialog({
 			'operation': 'send_reminder',
 			'approval_id': $iApproval,
 			'step': $iCurrentStep,
+			'edit_mode': $iEditMode,
 		};
 		oDialog.block();
 		$.post(GetAbsoluteUrlModulesRoot()+'approval-base/ajax.approval.php', oParams, function(data) {
@@ -247,7 +249,7 @@ EOF
 	/**
 	 * Render the status in HTML
 	 */	 	
-	public function GetDisplayStatus($oPage)
+	public function GetDisplayStatus($oPage, $bEditMode = false)
 	{
 		$sImgOngoing = utils::GetAbsoluteUrlModulesRoot().'approval-base/waiting-reply.png';
 		$sImgApproved = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.png';
@@ -635,7 +637,7 @@ EOF
 
 			// Add a button to send a reminder for the current step (if relevant)
 			//
-			$sReminderHtml = $this->GetReminderButton($oPage, $aStepData);
+			$sReminderHtml = $this->GetReminderButton($oPage, $aStepData, $bEditMode);
 			if (strlen($sReminderHtml) > 0)
 			{
 				$sStepHtml .= '<tr>';
@@ -1711,6 +1713,7 @@ EOF
 
 			while ($oScheme = $oApprovals->Fetch())
 			{
+				/** @var \_ApprovalScheme_ $oScheme */
 				$sId = 'approval-exec-'.$oScheme->GetKey();
 				$sLabel = trim($oScheme->Get('label'));
 				if ((strlen($sLabel) == 0) && ($oApprovals->Count() > 1))
@@ -1725,7 +1728,7 @@ EOF
 				}
 
 				$oPage->add('<div id="'.$sId.'_status" class="approval-exec-status">');
-				$oPage->add($oScheme->GetDisplayStatus($oPage));
+				$oPage->add($oScheme->GetDisplayStatus($oPage, $bEditMode));
 				$oPage->add('</div>');
 
 				if ($oApprovals->Count() > 1)
