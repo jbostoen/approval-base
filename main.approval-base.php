@@ -1,19 +1,24 @@
 <?php
-// Copyright (C) 2012-2016 Combodo SARL
-//
-//   This program is free software; you can redistribute it and/or modify
-//   it under the terms of the GNU General Public License as published by
-//   the Free Software Foundation; version 3 of the License.
-//
-//   This program is distributed in the hope that it will be useful,
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//   GNU General Public License for more details.
-//
-//   You should have received a copy of the GNU General Public License
-//   along with this program; if not, write to the Free Software
-//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+/**
+ * Copyright (C) 2013-2019 Combodo SARL
+ *
+ * This file is part of iTop.
+ *
+ * iTop is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * iTop is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ *
+ *
+ */
 
 /**
  * Module approval-base
@@ -27,9 +32,12 @@
 if (is_dir(MODULESROOT.'itop-portal-base'))
 {
 	// If the portal is installed, then it may use the approval brick
-	require_once(MODULESROOT.'approval-base/approvalbrick.class.inc.php');
-	require_once(MODULESROOT.'approval-base/approvalbrickcontroller.class.inc.php');
-	require_once(MODULESROOT.'approval-base/approvalbrickrouter.class.inc.php');
+	// Important: The brick files are required manually and not autoloaded because it would not work as they are in the same namespace than the standard bricks but not in the same directory.
+	// We wanted to keep the same namespace to simplify future refactoring of this brick with the standard ones.
+	require_once APPROOT.'/lib/composer-vendor/autoload.php';
+	require_once MODULESROOT.'approval-base/portal/src/Brick/ApprovalBrick.php';
+	require_once MODULESROOT.'approval-base/portal/src/Controller/ApprovalBrickController.php';
+	require_once MODULESROOT.'approval-base/portal/src/Router/ApprovalBrickRouter.php';
 }
 
 /**
