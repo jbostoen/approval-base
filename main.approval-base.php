@@ -1922,6 +1922,11 @@ class CheckApprovalTimeout implements iBackgroundProcess
 }
 
 
+/**
+ * Sent when an object enters the waiting for approval state
+ *
+ * @see ApprovalScheme::SendApprovalRequest
+ */
 class TriggerOnApprovalRequest extends TriggerOnObject
 {
 	public static function Init()
