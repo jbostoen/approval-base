@@ -32,6 +32,7 @@ SetupWebPage::AddModule(
 		// Setup
 		//
 		'dependencies' => array(
+			'itop-portal-base/2.7.0' 
 		),
 		'mandatory' => false,
 		'visible' => false,

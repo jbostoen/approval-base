@@ -34,7 +34,7 @@ if (is_dir(MODULESROOT.'itop-portal-base'))
 	// If the portal is installed, then it may use the approval brick
 	// Important: The brick files are required manually and not autoloaded because it would not work as they are in the same namespace than the standard bricks but not in the same directory.
 	// We wanted to keep the same namespace to simplify future refactoring of this brick with the standard ones.
-	require_once APPROOT.'/lib/composer-vendor/autoload.php';
+	require_once APPROOT.'/lib/autoload.php';
 	require_once MODULESROOT.'approval-base/portal/src/Brick/ApprovalBrick.php';
 	require_once MODULESROOT.'approval-base/portal/src/Controller/ApprovalBrickController.php';
 	require_once MODULESROOT.'approval-base/portal/src/Router/ApprovalBrickRouter.php';
