@@ -25,7 +25,6 @@
 
 @include_once(__DIR__.'/../../approot.inc.php');
 @include_once(__DIR__.'/../../../approot.inc.php');
-require_once(APPROOT.'bootstrap.inc.php');
 require_once(APPROOT.'/application/application.inc.php');
 require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 

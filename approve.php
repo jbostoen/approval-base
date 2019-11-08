@@ -23,7 +23,6 @@
  * @license     http://www.opensource.org/licenses/gpl-3.0.html LGPL
  */
 require_once('../../approot.inc.php');
-require_once(APPROOT.'bootstrap.inc.php');
 require_once(APPROOT.'/application/application.inc.php');
 require_once(APPROOT.'/application/nicewebpage.class.inc.php');
 require_once(APPROOT.'/application/wizardhelper.class.inc.php');
