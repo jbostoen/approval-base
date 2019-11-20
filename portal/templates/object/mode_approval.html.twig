@@ -89,7 +89,7 @@
 			$('.approval-confirmation-text').html((sOperation == 'approve') ? '{{ 'Approval:Portal:Dlg:ApproveOne'|dict_s|raw }}' : '{{ 'Approval:Portal:Dlg:RejectOne'|dict_s|raw }}');
 
 			// Creating a new modal
-			var oModalElem = CreatePortalModal({
+			var oModalElem = CombodoPortalToolbox.OpenModal({
 				base_modal: {
 					usage: 'clone',
 					selector: '#modal-for-' + sModalIdSuffix,
