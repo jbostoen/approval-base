@@ -16,8 +16,6 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- *
- *
  */
 
 /**
@@ -32,9 +30,12 @@
 if (is_dir(MODULESROOT.'itop-portal-base'))
 {
 	// If the portal is installed, then it may use the approval brick
-	// Important: The brick files are required manually and not autoloaded because it would not work as they are in the same namespace than the standard bricks but not in the same directory.
+	// Important: The approval brick files are required manually and not autoloaded because it would not work as they are in the same namespace than the standard bricks but not in the same directory.
 	// We wanted to keep the same namespace to simplify future refactoring of this brick with the standard ones.
-	require_once APPROOT.'/lib/autoload.php';
+	require_once APPROOT.'lib/autoload.php';
+	// Note: This one has to be loaded here because the approval-base module is loaded BEFORE itop-portal-base
+	// Therefore, when it tries to load the PortalBrick, AbstractController, ... classes, it would not work.
+	require_once MODULESROOT.'itop-portal-base/portal/vendor/autoload.php';
 	require_once MODULESROOT.'approval-base/portal/src/Brick/ApprovalBrick.php';
 	require_once MODULESROOT.'approval-base/portal/src/Controller/ApprovalBrickController.php';
 	require_once MODULESROOT.'approval-base/portal/src/Router/ApprovalBrickRouter.php';

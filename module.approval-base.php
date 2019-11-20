@@ -15,8 +15,6 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- *
- *
  */
 
 /** @noinspection PhpUnhandledExceptionInspection */
@@ -32,7 +30,6 @@ SetupWebPage::AddModule(
 		// Setup
 		//
 		'dependencies' => array(
-			'itop-portal-base/2.7.0' 
 		),
 		'mandatory' => false,
 		'visible' => false,
