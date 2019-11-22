@@ -1957,6 +1957,15 @@ class TriggerOnApprovalRequest extends TriggerOnObject
 
 class ActionEmailApprovalRequest extends ActionEmail
 {
+	/**
+	 * Before N°1596 the from field wasn't used, but as it is inherited from {@link ActionEmail} and
+	 * defined as mandatory it was filled with this value.
+	 * @since 3.0.0 N°1596
+	 */
+	const LEGACY_DEFAULT_FROM = 'nobody@no.where.org';
+
+	const MODULE_NAME = 'approval-base';
+
 	public static function Init()
 	{
 		$aParams = array
@@ -1977,10 +1986,16 @@ class ActionEmailApprovalRequest extends ActionEmail
 		MetaModel::Init_AddAttribute(new AttributeTemplateString("subject_reminder", array("allowed_values"=>null, "sql"=>"subject_reminder", "default_value"=>null, "is_null_allowed"=>true, "depends_on"=>array())));
 
 		// Display lists
-		MetaModel::Init_SetZListItems('details', array('name', 'description', 'status', 'test_recipient', 'cc', 'bcc', 'subject', 'subject_reminder', 'body', 'trigger_list'));
+		MetaModel::Init_SetZListItems('details', array('name', 'description', 'status', 'test_recipient', 'from', 'reply_to', 'cc', 'bcc', 'subject', 'subject_reminder', 'body', 'trigger_list'));
 		MetaModel::Init_SetZListItems('list', array('name', 'status', 'subject')); // Attributes to be displayed for a list
 		// Search criteria
 		MetaModel::Init_SetZListItems('standard_search', array('name','description', 'status', 'subject')); // Criteria of the std search form
+	}
+
+	public function PrefillCreationForm(&$aContextParam)
+	{
+		$this->Set('from', MetaModel::GetModuleSetting(self::MODULE_NAME, 'email_sender'));
+		$this->Set('reply_to', MetaModel::GetModuleSetting(self::MODULE_NAME, 'email_reply_to'));
 	}
 
 	// returns a the list of emails as a string, or a detailed error description
@@ -1988,7 +2003,6 @@ class ActionEmailApprovalRequest extends ActionEmail
 	{
 		return parent::FindRecipients($sRecipAttCode, $aArgs);
 	}
-
 
 	public function DoExecute($oTrigger, $aContextArgs)
 	{
@@ -1999,13 +2013,31 @@ class ActionEmailApprovalRequest extends ActionEmail
 		// Hack the current object in memory, so that the email gets correctly prepared
 		// by the standard implementation of ActionEmail
 		// The current action MUST NOT be saved into the DB!!!
+		/** @var \ApprovalScheme $oScheme */
 		$oScheme = $aContextArgs['approval_scheme->object()'];
+		/** @var cmdbAbstractObject $oObject */
 		$oObject = $aContextArgs['this->object()'];
+		/** @var Contact $oApprover */
 		$oApprover = $aContextArgs['approver->object()'];
 		$sTo = 'SELECT '.get_class($oApprover).' WHERE id = '.$oApprover->GetKey();
 		$this->Set('to', $sTo);
-		$this->Set('from', $oScheme->GetEmailSender($oApprover, $oObject));
-		$this->Set('reply_to', $oScheme->GetEmailReplyTo($oApprover, $oObject));
+
+		$sEmailFrom = $this->Get('from');
+		if (empty($sEmailFrom) || ($sEmailFrom === self::LEGACY_DEFAULT_FROM))
+		{
+			// N°1596 just to keep compatibility with old data, as the 'from' field is now displayed in the form and prefilled
+			$sEmailFrom = MetaModel::GetModuleSetting(self::MODULE_NAME, 'email_sender');
+			$this->Set('from', $sEmailFrom);
+		}
+
+		$sEmailReplyTo = $this->Get('reply_to');
+		if (empty($sEmailReplyTo))
+		{
+			// N°1596 just to keep compatibility with old data as the 'reply_to' field is now displayed in the form and prefilled
+			$sEmailReplyTo = MetaModel::GetModuleSetting(self::MODULE_NAME, 'email_reply_to');
+			$this->Set('reply_to', $sEmailReplyTo);
+		}
+
 		if (($aContextArgs['message_type'] == 'reminder'))
 		{
 			$sReminderSubject = trim($this->Get('subject_reminder'));
@@ -2016,12 +2048,4 @@ class ActionEmailApprovalRequest extends ActionEmail
 		}
 		return parent::DoExecute($oTrigger, $aContextArgs);
 	}
-
-	public function ComputeValues()
-	{
-		// Initialize mandatory value(s)
-		$this->Set('from', 'nobody@no.where.org');
-		return parent::ComputeValues();
-	}
-
 }

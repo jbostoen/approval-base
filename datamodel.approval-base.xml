@@ -404,30 +404,6 @@
 		return $sAddress;
 	}]]></code>
         </method>
-        <method id="GetEmailSender">
-          <comment>/**&#13;
-            * Overridable to specify the email sender in a more dynamic way&#13;
-            */</comment>
-          <static>false</static>
-          <access>public</access>
-          <type>OQLMenuNode</type>
-          <code><![CDATA[	public function GetEmailSender($oApprover, $oObject)
-	{
-		return MetaModel::GetModuleSetting('approval-base', 'email_sender');
-	}]]></code>
-        </method>
-        <method id="GetEmailReplyTo">
-          <comment>/**&#13;
-            * Overridable to specify the email reply-to in a more dynamic way&#13;
-            */</comment>
-          <static>false</static>
-          <access>public</access>
-          <type>OQLMenuNode</type>
-          <code><![CDATA[	public function GetEmailReplyTo($oApprover, $oObject)
-	{
-		return MetaModel::GetModuleSetting('approval-base', 'email_reply_to');
-	}]]></code>
-        </method>
         <method id="IsAllowedToSeeObjectDetails">
           <comment>/**&#13;
             * Overridable to disable the link to view more information on the object&#13;
