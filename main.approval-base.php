@@ -1959,7 +1959,7 @@ class ActionEmailApprovalRequest extends ActionEmail
 {
 	/**
 	 * Before N°1596 the from field wasn't used, but as it is inherited from {@link ActionEmail} and
-	 * defined as mandatory it was filled with this value.
+	 * defined as mandatory it was filled with this value. This is also used when creating default actions.
 	 * @since 3.0.0 N°1596
 	 */
 	const LEGACY_DEFAULT_FROM = 'nobody@no.where.org';
@@ -1990,6 +1990,17 @@ class ActionEmailApprovalRequest extends ActionEmail
 		MetaModel::Init_SetZListItems('list', array('name', 'status', 'subject')); // Attributes to be displayed for a list
 		// Search criteria
 		MetaModel::Init_SetZListItems('standard_search', array('name','description', 'status', 'subject')); // Criteria of the std search form
+	}
+
+	public static function GetDefaultEmailSender()
+	{
+		$sEmailFrom = MetaModel::GetConfig()->Get('email_default_sender_address');
+		if (empty($sEmailFrom))
+		{
+			$sEmailFrom = static::LEGACY_DEFAULT_FROM;
+		}
+
+		return $sEmailFrom;
 	}
 
 	public function PrefillCreationForm(&$aContextParam)
