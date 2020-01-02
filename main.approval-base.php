@@ -1970,7 +1970,7 @@ class ActionEmailApprovalRequest extends ActionEmail
 	{
 		$aParams = array
 		(
-			"category" => "core/cmdb,application",
+			"category" => "core/cmdb,application,grant_by_profile",
 			"key_type" => "autoincrement",
 			"name_attcode" => "name",
 			"state_attcode" => "",
