@@ -27,20 +27,6 @@
  * @license     http://www.opensource.org/licenses/gpl-3.0.html LGPL
  */
 
-if (is_dir(MODULESROOT.'itop-portal-base'))
-{
-	// If the portal is installed, then it may use the approval brick
-	// Important: The approval brick files are required manually and not autoloaded because it would not work as they are in the same namespace than the standard bricks but not in the same directory.
-	// We wanted to keep the same namespace to simplify future refactoring of this brick with the standard ones.
-	require_once APPROOT.'lib/autoload.php';
-	// Note: This one has to be loaded here because the approval-base module is loaded BEFORE itop-portal-base
-	// Therefore, when it tries to load the PortalBrick, AbstractController, ... classes, it would not work.
-	require_once MODULESROOT.'itop-portal-base/portal/vendor/autoload.php';
-	require_once MODULESROOT.'approval-base/portal/src/Brick/ApprovalBrick.php';
-	require_once MODULESROOT.'approval-base/portal/src/Controller/ApprovalBrickController.php';
-	require_once MODULESROOT.'approval-base/portal/src/Router/ApprovalBrickRouter.php';
-}
-
 /**
  * An approval process associated to an object
  * Derive this class to implement an approval process

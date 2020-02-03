@@ -20,7 +20,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'approval-base/3.0.0-dev',
+	'approval-base/3.0.0',
 	array(
 		// Identification
 		//
@@ -38,8 +38,11 @@ SetupWebPage::AddModule(
 		// Components
 		//
 		'datamodel' => array(
+			// Explicitly load classes from DM
 			'main.approval-base.php',
-			'model.approval-base.php'
+			'model.approval-base.php',
+			// Temp. compatibility with iTop 2.6 and earlier
+			'compatibilitybridge.php',
 		),
 		'webservice' => array(
 
