@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2013-2019 Combodo SARL
+ * Copyright (C) 2013-2020 Combodo SARL
  *
  * This file is part of iTop.
  *
@@ -135,13 +135,21 @@ abstract class _ApprovalScheme_ extends DBObject
 	/**
 	 * Alternative to AddStep: Adds a step IIF the query returns at least one approver
 	 *
-	 * @param DBObject $oObject The source object (query arguments :this->attcode)
-	 * @param string $sApproversQuery OQL giving the approvers
-	 * @param integer $iTimeoutSec The timeout duration if (0 to disable the timeout feature)
-	 * @param boolean $bApproveOnTimeout Set to true to approve in case of timeout for the current step
-	 * @param integer $iExitCondition EXIT_ON_... _FIRST_REJECT, _FIRST_APPROVE, _FIRST_REPLY defaults to the legacy behavior
-	 * @param boolean $bReusePreviousAnswers Set to true to recycle an answer given by an approver at a previous step (if any)
+	 * @param DBObject $oObject               The source object (query arguments :this->attcode)
+	 * @param string   $sApproversQuery       OQL giving the approvers
+	 * @param integer  $iTimeoutSec           The timeout duration if (0 to disable the timeout feature)
+	 * @param boolean  $bApproveOnTimeout     Set to true to approve in case of timeout for the current step
+	 * @param integer  $iExitCondition        EXIT_ON_... _FIRST_REJECT, _FIRST_APPROVE, _FIRST_REPLY defaults to the legacy behavior
+	 * @param boolean  $bReusePreviousAnswers Set to true to recycle an answer given by an approver at a previous step (if any)
+	 *
 	 * @return bool true if a step has been added
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 * @throws \MissingQueryArgument
+	 * @throws \MySQLException
+	 * @throws \MySQLHasGoneAwayException
+	 * @throws \OQLException
+	 * @throws \Exception
 	 */
 	public function AddStepFromQuery(DBObject $oObject, $sApproversQuery, $iTimeoutSec = 0, $bApproveOnTimeout = true, $iExitCondition = self::EXIT_ON_FIRST_REJECT, $bReusePreviousAnswers = true)
 	{
@@ -169,7 +177,15 @@ abstract class _ApprovalScheme_ extends DBObject
 
 	/**
 	 * Helper to build the button and associated dialog, if relevant, enabled, etc.
-	 */	 	
+	 *
+	 * @param      $oPage
+	 * @param      $aStepData
+	 * @param bool $bEditMode
+	 *
+	 * @return string
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreException
+	 */
 	protected function GetReminderButton($oPage, $aStepData, $bEditMode = false)
 	{
 		$sRet = '';
@@ -243,7 +259,15 @@ EOF
 
 	/**
 	 * Render the status in HTML
-	 */	 	
+	 *
+	 * @param      $oPage
+	 * @param bool $bEditMode
+	 *
+	 * @return string
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreException
+	 * @throws \Exception
+	 */
 	public function GetDisplayStatus($oPage, $bEditMode = false)
 	{
 		$sImgOngoing = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/waiting-reply.png';
@@ -778,6 +802,13 @@ EOF
 	/** Helper to record the end of the process in several cases
 	 * - normal termination
 	 * - abort
+	 *
+	 * @param string $bApproved
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
 	 */
 	protected function RecordEnd($bApproved)
 	{
@@ -808,7 +839,9 @@ EOF
 	 * - there is no more step to process
 	 * 
 	 * On termination: determines + records the final status
-	 * 	 and invokes the relevant verb (DoApprove/DoReject)	 	 
+	 * 	 and invokes the relevant verb (DoApprove/DoReject)
+	 *
+	 * @throws \CoreException
 	 */	 
 	public function StartNextStep()
 	{
@@ -946,8 +979,19 @@ EOF
 	 * Processes a vote given by an approver:
 	 * - find the approver
 	 * - record the answer
-	 * Then, start the next step if the current one is over 
-	 */	 
+	 * Then, start the next step if the current one is over
+	 *
+	 * @param        $iStep
+	 * @param        $oApprover
+	 * @param        $bApprove
+	 * @param null   $oSubstitute
+	 * @param string $sComment
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 */
 	public function OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute = null, $sComment = '')
 	{
 		if ($this->Get('status') != 'ongoing')
@@ -1018,7 +1062,15 @@ EOF
 
 	/**
 	 * Aborting means stopping definitively the ENTIRE process (not only the current step)
-	 */	 
+	 *
+	 * @param $bApprove
+	 * @param $sComment
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 */
 	public function OnAbort($bApprove, $sComment)
 	{
 		if ($this->Get('status') != 'ongoing')
@@ -1056,6 +1108,13 @@ EOF
 
 	/**
 	 * Helper to determine if a given user is expected to give her answer
+	 *
+	 * @param $sContactClass
+	 * @param $iContactId
+	 *
+	 * @return |null
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreException
 	 */
 	public function GetContactPassCode($sContactClass, $iContactId)
 	{
@@ -1098,6 +1157,8 @@ EOF
 
 	/**
 	 * Helper to compute current state start time - this information is not recorded
+	 *
+	 * @throws \CoreException
 	 */
 	public function ComputeLastStart()
 	{
@@ -1114,9 +1175,16 @@ EOF
 		}
 		return $iStepStarted;
 	}
-	 
+
 	/**
 	 * Helper to compute a target time, depending on the working hours
+	 *
+	 * @param $iStartTime
+	 * @param $iDurationSec
+	 *
+	 * @return
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreException
 	 */
 	protected function ComputeDeadline($iStartTime, $iDurationSec)
 	{
@@ -1145,6 +1213,8 @@ EOF
 
 	/**
 	 * Compute the next timeout (depends on the step and the eventual forwards)
+	 *
+	 * @throws \CoreException
 	 */
 	public function ComputeTimeout()
 	{
@@ -1188,7 +1258,9 @@ EOF
 	/**
 	 * A timeout can occur in two conditions:
 	 * - The current step is running out of time: terminate it and start the next one
-	 * - An forward has been declared for an approver who has not yet replied	 
+	 * - An forward has been declared for an approver who has not yet replied
+	 *
+	 * @throws \CoreException
 	 */	 
 	public function OnTimeout()
 	{
@@ -1264,6 +1336,8 @@ EOF
 
 	/**
 	 * Helper to list the expected replies, and send a reminder
+	 *
+	 * @throws \CoreException
 	 */
 	public function GetAwaitedReplies()
 	{
@@ -1393,8 +1467,8 @@ EOF
 	/**
 	 * Lookup for any existing answer (returns information on the first found)
 	 *
-	 * @param $iStrictlyBeforeStep Step before which the search will be made
-	 * @param $aSearchedApproverData The approver which reply should be found
+	 * @param int $iStrictlyBeforeStep Step before which the search will be made
+	 * @param array $aSearchedApproverData The approver which reply should be found
 	 * @return array($iStep, $bApproved, $sComment)
 	 */
 	protected function FindAnswer($iStrictlyBeforeStep, $aSearchedApproverData)
@@ -1427,6 +1501,14 @@ EOF
 		return array($iFoundStep, $bApproved, $sComment);
 	}
 
+	/**
+	 * @param      $sFrom
+	 * @param      $oPage
+	 * @param      $oApprover
+	 * @param      $oObject
+	 * @param      $sToken
+	 * @param null $oSubstitute
+	 */
 	protected function MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
@@ -1435,6 +1517,11 @@ EOF
 		$oPage->add("<div id=\"form_approval_introduction\">".$sIntroduction."</div>\n");
 	}
 
+	/**
+	 * @param        $sFrom
+	 * @param        $oPage
+	 * @param string $sInjectInForm
+	 */
 	protected function MakeFormInputs($sFrom, $oPage, $sInjectInForm = '')
 	{
 		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
@@ -1475,6 +1562,14 @@ EOF
 		);
 	}
 
+	/**
+	 * @param      $sFrom
+	 * @param      $oPage
+	 * @param      $oApprover
+	 * @param      $oObject
+	 * @param      $sToken
+	 * @param null $oSubstitute
+	 */
 	protected function MakeFormFooter($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
@@ -1494,7 +1589,14 @@ EOF
 
 	/**
 	 * Build and output the approval form for a given user
-	 **/	
+	 *
+	 * @param      $sFrom
+	 * @param      $oPage
+	 * @param      $oApprover
+	 * @param      $oObject
+	 * @param      $sToken
+	 * @param null $oSubstitute
+	 */
 	public function DisplayApprovalForm($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$this->MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute);
@@ -1504,6 +1606,9 @@ EOF
 
 	/**
 	 * Build and output the abort form for the current user
+	 *
+	 * @param $sFrom
+	 * @param $oPage
 	 */
 	public function DisplayAbortForm($sFrom, $oPage)
 	{
@@ -1513,8 +1618,12 @@ EOF
 	}
 
 	/**
-	 * Overridable to change the display of days	
-	 */	
+	 * Overridable to change the display of days
+	 *
+	 * @param $iTime
+	 *
+	 * @return false|string
+	 */
 	public function GetDisplayDay($iTime)
 	{
 		if (method_exists('AttributeDateTime', 'GetFormat'))
@@ -1531,8 +1640,12 @@ EOF
 	}
 
 	/**
-	 * Overridable to change the display of time	
-	 */	
+	 * Overridable to change the display of time
+	 *
+	 * @param $iTime
+	 *
+	 * @return false|string
+	 */
 	public function GetDisplayTime($iTime)
 	{
 		if (method_exists('AttributeDateTime', 'GetFormat'))
@@ -1551,6 +1664,19 @@ EOF
 		return date($sTimeFormat, $iTime);
 	}
 
+	/**
+	 * @param        $iMenuId
+	 * @param        $param
+	 * @param string $sClassFilter
+	 *
+	 * @return array
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 * @throws \MissingQueryArgument
+	 * @throws \MySQLException
+	 * @throws \MySQLHasGoneAwayException
+	 * @throws \OQLException
+	 */
 	static public function GetPopMenuItems($iMenuId, $param, $sClassFilter = 'UserRequest')
 	{
 		$aRet = array();
@@ -1596,9 +1722,14 @@ EOF
 	/**
 	 * API to search for Approvals
 	 *
-	 * @param null $sApproverClass
-	 * @param null $iApproverId
+	 * @param string|null $sApproverClass
+	 * @param int|null $iApproverId
+	 *
 	 * @return array of ApprovalSheme objects
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 * @throws \MySQLException
+	 * @throws \OQLException
 	 */
 	static public function ListOngoingApprovals($sApproverClass = null, $iApproverId = null)
 	{
@@ -1618,8 +1749,13 @@ EOF
 	/**
 	 * API - Approve
 	 *
-	 * @param $oReplier Main approver or a substitute
+	 * @param        $oReplier Main approver or a substitute
 	 * @param string $sComment
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
 	 */
 	public function Approve($oReplier, $sComment = '')
 	{
@@ -1631,8 +1767,13 @@ EOF
 	/**
 	 * API - Reject
 	 *
-	 * @param $oReplier Main approver or a substitute
+	 * @param        $oReplier Main approver or a substitute
 	 * @param string $sComment
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
 	 */
 	public function Reject($oReplier, $sComment)
 	{

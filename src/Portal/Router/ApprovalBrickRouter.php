@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2013-2019 Combodo SARL
+ * Copyright (C) 2013-2020 Combodo SARL
  *
  * This file is part of iTop.
  *
@@ -22,6 +22,7 @@
 
 use Combodo\iTop\Portal\Routing\ItopExtensionsExtraRoutes;
 
+/** @noinspection PhpUnhandledExceptionInspection */
 ItopExtensionsExtraRoutes::AddRoutes(
 	array(
 		array('pattern' => '/approval/{sBrickId}',

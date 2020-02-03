@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (C) 2013-2019 Combodo SARL
+ * Copyright (C) 2013-2020 Combodo SARL
  *
  * This file is part of iTop.
  *
@@ -44,6 +44,9 @@ class ApprovalBrick extends PortalBrick
 	static $sRouteName = 'p_approval_brick';
 	protected $aClasses; // class => array of fields
 
+	/**
+	 * @inheritDoc
+	 */
 	public function __construct()
 	{
 		parent::__construct();
@@ -80,13 +83,7 @@ class ApprovalBrick extends PortalBrick
 	}
 
 	/**
-	 * Load the brick's data from the xml passed as a ModuleDesignElement.
-	 * This is used to set all the brick attributes at once.
-	 *
-	 * @param \Combodo\iTop\DesignElement $oMDElement
-	 *
-	 * @return $this
-	 * @throws \DOMFormatException
+	 * @inheritDoc
 	 */
 	public function LoadFromXml(DesignElement $oMDElement)
 	{
