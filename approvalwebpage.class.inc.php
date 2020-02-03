@@ -51,7 +51,7 @@ class ApprovalWebPage extends NiceWebPage
 		}
 		else
 		{
-			$this->add_linked_stylesheet(utils::GetAbsoluteUrlModulesRoot()."approval-base/approve.css");
+			$this->add_linked_stylesheet(utils::GetAbsoluteUrlModulesRoot()."approval-base/asset/css/approve.css");
 		}
 		$this->add_linked_script('../js/jquery.layout.min.js');
 		$this->add_linked_script('../js/jquery.ba-bbq.min.js');

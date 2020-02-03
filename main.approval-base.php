@@ -260,11 +260,11 @@ EOF
 	 */	 	
 	public function GetDisplayStatus($oPage, $bEditMode = false)
 	{
-		$sImgOngoing = utils::GetAbsoluteUrlModulesRoot().'approval-base/waiting-reply.png';
-		$sImgApproved = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.png';
-		$sImgRejected = utils::GetAbsoluteUrlModulesRoot().'approval-base/reject.png';
-		$sImgArrow = utils::GetAbsoluteUrlModulesRoot().'approval-base/arrow-next.png';
-		$sImgBubbleTriangle = utils::GetAbsoluteUrlModulesRoot().'approval-base/bubble-triangle.png';
+		$sImgOngoing = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/waiting-reply.png';
+		$sImgApproved = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/approve.png';
+		$sImgRejected = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/reject.png';
+		$sImgArrow = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/arrow-next.png';
+		$sImgBubbleTriangle = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/bubble-triangle.png';
 
 		$oPage->add_style(
 <<<EOF

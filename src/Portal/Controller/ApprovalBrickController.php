@@ -227,7 +227,7 @@ class ApprovalBrickController extends BrickController
 			// We have to check whether the 'operation' parameter is defined or not in order to know if the form is required via ajax (to be displayed as a modal dialog) or if it's a lifecycle call from a existing form.
 			if ($oRequest->request->get('operation') === null)
 			{
-				$oResponse = $this->render('approval-base/portal/templates/object/modal.html.twig', $aData);
+				$oResponse = $this->render('approval-base/view/portal/object/modal.html.twig', $aData);
 			}
 			else
 			{
@@ -248,7 +248,7 @@ class ApprovalBrickController extends BrickController
 				}
 			}
 			$aData['sPageTitle'] = $aData['form']['title'];
-			$oResponse = $this->render('approval-base/portal/templates/object/layout.html.twig', $aData);
+			$oResponse = $this->render('approval-base/view/portal/object/layout.html.twig', $aData);
 		}
 
 		return $oResponse;

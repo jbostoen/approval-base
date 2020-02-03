@@ -304,7 +304,7 @@ try
 
 		require_once(APPROOT.'application/itopwebpage.class.inc.php');
 		$oP = new iTopWebPage(Dict::S('Approval:Form:Title'));
-		$sModule = utils::GetAbsoluteUrlModulesRoot().'approval-base';
+		$sModule = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img';
 		$oP->add_style(
 <<<EOF
 #comment{

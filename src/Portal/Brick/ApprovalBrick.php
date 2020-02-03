@@ -36,7 +36,7 @@ class ApprovalBrick extends PortalBrick
 {
 	const DEFAULT_DECORATION_CLASS_HOME = 'fa fa-check-circle';
 	const DEFAULT_DECORATION_CLASS_NAVIGATION_MENU = 'fa fa-check-circle fa-2x';
-	const DEFAULT_PAGE_TEMPLATE_PATH = 'approval-base/portal/templates/main/layout.html.twig';
+	const DEFAULT_PAGE_TEMPLATE_PATH = 'approval-base/view/portal/main/layout.html.twig';
 	//const DEFAULT_DATA_LOADING = self::ENUM_DATA_LOADING_LAZY;
 	//const DEFAULT_LIST_LENGTH = 20;
 	const DEFAULT_ZLIST_FIELDS = 'list';
