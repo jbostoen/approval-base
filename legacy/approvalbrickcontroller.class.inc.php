@@ -4,7 +4,7 @@
 //
 //   This file is part of iTop.
 //
-//   iTop is free software; you can redistribute it and/or modify	
+//   iTop is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU Affero General Public License as published by
 //   the Free Software Foundation, either version 3 of the License, or
 //   (at your option) any later version.
@@ -44,9 +44,9 @@ class ApprovalBrickController extends BrickController
 	{
 		$oBrick = ApplicationHelper::GetLoadedBrickFromId($oApp, $sBrickId);
 		$aClassesConfig = $oBrick->GetClasses();
-		
+
 		$oMyself = UserRights::GetContactObject();
-		
+
 		$iProcessed = 0;
 		$sOperation = $oRequest->get('operation');
 		if ($sOperation != '')
@@ -191,7 +191,7 @@ class ApprovalBrickController extends BrickController
 			// We have to check whether the 'operation' parameter is defined or not in order to know if the form is required via ajax (to be displayed as a modal dialog) or if it's a lifecycle call from a existing form.
 			if ($oRequest->request->get('operation') === null)
 			{
-				$oResponse = $oApp['twig']->render('approval-base/portal/views/object/modal.html.twig', $aData);
+				$oResponse = $oApp['twig']->render('approval-base/legacy/views/object/modal.html.twig', $aData);
 			}
 			else
 			{
@@ -211,74 +211,74 @@ class ApprovalBrickController extends BrickController
 				}
 			}
 			$aData['sPageTitle'] = $aData['form']['title'];
-			$oResponse = $oApp['twig']->render('approval-base/portal/views/object/layout.html.twig', $aData);
+			$oResponse = $oApp['twig']->render('approval-base/legacy/views/object/layout.html.twig', $aData);
 		}
 
 		return $oResponse;
 	}
 
-    /**
-     * Handles attachment download on an object under approval.
-     *
-     * Note: This doesn't use the ObjectController::AttachmentAction() because Attachments might be linked to objects that are not allowed to the current user's scopes.
-     *
-     * @param Request $oRequest
-     * @param Application $oApp
-     * @param string $sAttachmentId
-     */
-    public function AttachmentAction(Request $oRequest, Application $oApp, $sAttachmentId)
-    {
-        // Check if attachment exists
-        $oAttachment = MetaModel::GetObject('Attachment', $sAttachmentId, false, true);
-        if($oAttachment === null)
-        {
-            // We should never be there as the secuirty helper makes sure that the object exists, but just in case.
-            IssueLog::Info(__METHOD__ . ' at line ' . __LINE__ . ' : Could not load attachment #' . $sAttachmentId . '.');
-            $oApp->abort(404, Dict::S('UI:ObjectDoesNotExist'));
-        }
+	/**
+	 * Handles attachment download on an object under approval.
+	 *
+	 * Note: This doesn't use the ObjectController::AttachmentAction() because Attachments might be linked to objects that are not allowed to the current user's scopes.
+	 *
+	 * @param Request $oRequest
+	 * @param Application $oApp
+	 * @param string $sAttachmentId
+	 */
+	public function AttachmentAction(Request $oRequest, Application $oApp, $sAttachmentId)
+	{
+		// Check if attachment exists
+		$oAttachment = MetaModel::GetObject('Attachment', $sAttachmentId, false, true);
+		if($oAttachment === null)
+		{
+			// We should never be there as the secuirty helper makes sure that the object exists, but just in case.
+			IssueLog::Info(__METHOD__ . ' at line ' . __LINE__ . ' : Could not load attachment #' . $sAttachmentId . '.');
+			$oApp->abort(404, Dict::S('UI:ObjectDoesNotExist'));
+		}
 
-        $sLinkedObjClass = $oAttachment->Get('item_class');
-        $iLinkedObjId = $oAttachment->Get('item_id');
-        $oCurrentContact = UserRights::GetContactObject();
+		$sLinkedObjClass = $oAttachment->Get('item_class');
+		$iLinkedObjId = $oAttachment->Get('item_id');
+		$oCurrentContact = UserRights::GetContactObject();
 
-        // Check if attachment linked to object in approval scope
-        $aApprovals = ApprovalScheme::ListOngoingApprovals(get_class($oCurrentContact), $oCurrentContact->GetKey());
-        $aObjects = array();
-        $bFound = false;
-        foreach ($aApprovals as $oApproval)
-        {
-            $sObjClass = $oApproval->Get('obj_class');
-            $iObjKey = $oApproval->Get('obj_key');
-            if( ($sObjClass === $sLinkedObjClass) && ($iObjKey == $iLinkedObjId) )
-            {
-                $bFound = true;
-                break;
-            }
-        }
+		// Check if attachment linked to object in approval scope
+		$aApprovals = ApprovalScheme::ListOngoingApprovals(get_class($oCurrentContact), $oCurrentContact->GetKey());
+		$aObjects = array();
+		$bFound = false;
+		foreach ($aApprovals as $oApproval)
+		{
+			$sObjClass = $oApproval->Get('obj_class');
+			$iObjKey = $oApproval->Get('obj_key');
+			if( ($sObjClass === $sLinkedObjClass) && ($iObjKey == $iLinkedObjId) )
+			{
+				$bFound = true;
+				break;
+			}
+		}
 
-        if(!$bFound)
-        {
-            IssueLog::Info(__METHOD__ . ' at line ' . __LINE__ . ' : Attachment #' . $sAttachmentId . ' not linked to an object in Contact #' . $oCurrentContact->GetKey() . ' approval schemes.');
-            $oApp->abort(404, Dict::S('UI:ObjectDoesNotExist'));
-        }
+		if(!$bFound)
+		{
+			IssueLog::Info(__METHOD__ . ' at line ' . __LINE__ . ' : Attachment #' . $sAttachmentId . ' not linked to an object in Contact #' . $oCurrentContact->GetKey() . ' approval schemes.');
+			$oApp->abort(404, Dict::S('UI:ObjectDoesNotExist'));
+		}
 
-        // Prepare response
-        // - One year ahead: an attachement cannot change
-        $iCacheSec = 31556926;
-        $aHeaders = array();
-        $aHeaders['Expires'] = '';
-        $aHeaders['Cache-Control'] = 'no-transform, public,max-age='.$iCacheSec.',s-maxage='.$iCacheSec;
-        // Reset the value set previously
-        $aHeaders['Pragma'] = 'cache';
-        // An arbitrary date in the past is ok
-        $aHeaders['Last-Modified'] = 'Wed, 15 Jun 2015 13:21:15 GMT';
+		// Prepare response
+		// - One year ahead: an attachement cannot change
+		$iCacheSec = 31556926;
+		$aHeaders = array();
+		$aHeaders['Expires'] = '';
+		$aHeaders['Cache-Control'] = 'no-transform, public,max-age='.$iCacheSec.',s-maxage='.$iCacheSec;
+		// Reset the value set previously
+		$aHeaders['Pragma'] = 'cache';
+		// An arbitrary date in the past is ok
+		$aHeaders['Last-Modified'] = 'Wed, 15 Jun 2015 13:21:15 GMT';
 
-        /** @var \ormDocument $oDocument */
-        $oDocument = $oAttachment->Get('contents');
-        $aHeaders['Content-Type'] = $oDocument->GetMimeType();
-        $aHeaders['Content-Disposition'] = 'attachment;filename="'.$oDocument->GetFileName().'"';
+		/** @var \ormDocument $oDocument */
+		$oDocument = $oAttachment->Get('contents');
+		$aHeaders['Content-Type'] = $oDocument->GetMimeType();
+		$aHeaders['Content-Disposition'] = 'attachment;filename="'.$oDocument->GetFileName().'"';
 
-        return new Response($oDocument->GetData(), Response::HTTP_OK, $aHeaders);
-    }
+		return new Response($oDocument->GetData(), Response::HTTP_OK, $aHeaders);
+	}
 
 }

@@ -4,7 +4,7 @@
 //
 //   This file is part of iTop.
 //
-//   iTop is free software; you can redistribute it and/or modify	
+//   iTop is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU Affero General Public License as published by
 //   the Free Software Foundation, either version 3 of the License, or
 //   (at your option) any later version.
@@ -36,10 +36,10 @@ class ApprovalBrickRouter extends AbstractRouter
 			'callback' => 'Combodo\\iTop\\Portal\\Controller\\ApprovalBrickController::ViewObjectAction',
 			'bind' => 'p_approval_view_object'
 		),
-        array('pattern' => '/approval/attachment/download/{sAttachmentId}',
-            'callback' => 'Combodo\\iTop\\Portal\\Controller\\ApprovalBrickController::AttachmentAction',
-            'bind' => 'p_approval_attachment_download',
-        ),
+		array('pattern' => '/approval/attachment/download/{sAttachmentId}',
+			'callback' => 'Combodo\\iTop\\Portal\\Controller\\ApprovalBrickController::AttachmentAction',
+			'bind' => 'p_approval_attachment_download',
+		),
 	);
 
 }

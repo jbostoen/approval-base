@@ -1,18 +1,21 @@
 <?php
-// Copyright (C) 2012 Combodo SARL
-//
-//   This program is free software; you can redistribute it and/or modify
-//   it under the terms of the GNU General Public License as published by
-//   the Free Software Foundation; version 3 of the License.
-//
-//   This program is distributed in the hope that it will be useful,
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//   GNU General Public License for more details.
-//
-//   You should have received a copy of the GNU General Public License
-//   along with this program; if not, write to the Free Software
-//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+/**
+ * Copyright (C) 2013-2020 Combodo SARL
+ *
+ * This file is part of iTop.
+ *
+ * iTop is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * iTop is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ */
 
 /**
  * Class ApprovalWebPage
@@ -36,7 +39,11 @@ class ApprovalWebPage extends NiceWebPage
 	 * Portal menu
 	 */
 	protected $m_aMenuButtons;
-	
+
+	/**
+	 * @inheritDoc
+	 * @throws \Exception
+	 */
 	public function __construct($sTitle, $sAlternateStyleSheet = '')
 	{
 		$this->m_aMenuButtons = array();
@@ -51,7 +58,7 @@ class ApprovalWebPage extends NiceWebPage
 		}
 		else
 		{
-			$this->add_linked_stylesheet(utils::GetAbsoluteUrlModulesRoot()."approval-base/approve.css");
+			$this->add_linked_stylesheet(utils::GetAbsoluteUrlModulesRoot()."approval-base/asset/css/approve.css");
 		}
 		$this->add_linked_script('../js/jquery.layout.min.js');
 		$this->add_linked_script('../js/jquery.ba-bbq.min.js');
@@ -161,7 +168,10 @@ EOF
 	{
 		$this->m_aMenuButtons[] = array('id' => $sId, 'label' => $sLabel, 'hyperlink' => $sHyperlink);
 	}
-	
+
+	/**
+	 * @inheritDoc
+	 */
 	public function output()
 	{
 		$sMenu = '';
@@ -184,4 +194,3 @@ EOF
 		return '';
 	}
 }
-?>

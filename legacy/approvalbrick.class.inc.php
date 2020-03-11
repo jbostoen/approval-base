@@ -4,7 +4,7 @@
 //
 //   This file is part of iTop.
 //
-//   iTop is free software; you can redistribute it and/or modify	
+//   iTop is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU Affero General Public License as published by
 //   the Free Software Foundation, either version 3 of the License, or
 //   (at your option) any later version.
@@ -31,14 +31,14 @@ use MetaModel;
 
 /**
  * Description of ApprovalBrick
- * 
+ *
  * @author Romain Quetiez
  */
 class ApprovalBrick extends PortalBrick
 {
 	const DEFAULT_DECORATION_CLASS_HOME = 'fa fa-check-circle';
 	const DEFAULT_DECORATION_CLASS_NAVIGATION_MENU = 'fa fa-check-circle fa-2x';
-	const DEFAULT_PAGE_TEMPLATE_PATH = 'approval-base/portal/views/main/layout.html.twig';
+	const DEFAULT_PAGE_TEMPLATE_PATH = 'approval-base/legacy/views/main/layout.html.twig';
 	//const DEFAULT_DATA_LOADING = self::ENUM_DATA_LOADING_LAZY;
 	//const DEFAULT_LIST_LENGTH = 20;
 	const DEFAULT_ZLIST_FIELDS = 'list';
@@ -96,31 +96,31 @@ class ApprovalBrick extends PortalBrick
 		{
 			switch ($oBrickSubNode->nodeName)
 			{
-			case 'classes':
-				foreach ($oBrickSubNode->GetNodes('./class') as $oClassNode)
-				{
-					if (!$oClassNode->hasAttribute('id'))
+				case 'classes':
+					foreach ($oBrickSubNode->GetNodes('./class') as $oClassNode)
 					{
-						throw new DOMFormatException('ApprovalBrick: missing id attribute', null, null, $oClassNode);
-					}
-					$sClass = $oClassNode->getAttribute('id');
-
-					$aFields = array();
-					foreach ($oClassNode->GetNodes('./fields/field') as $oFieldNode)
-					{
-						if (!$oFieldNode->hasAttribute('id'))
+						if (!$oClassNode->hasAttribute('id'))
 						{
-							throw new DOMFormatException('ApprovalBrick: missing id attribute', null, null, $oFieldNode);
+							throw new DOMFormatException('ApprovalBrick: missing id attribute', null, null, $oClassNode);
 						}
-						$aFields[] = $oFieldNode->getAttribute('id');
+						$sClass = $oClassNode->getAttribute('id');
+
+						$aFields = array();
+						foreach ($oClassNode->GetNodes('./fields/field') as $oFieldNode)
+						{
+							if (!$oFieldNode->hasAttribute('id'))
+							{
+								throw new DOMFormatException('ApprovalBrick: missing id attribute', null, null, $oFieldNode);
+							}
+							$aFields[] = $oFieldNode->getAttribute('id');
+						}
+						if (empty($aFields))
+						{
+							$aFields = MetaModel::FlattenZList(MetaModel::GetZListItems($sClass, static::DEFAULT_ZLIST_FIELDS));
+						}
+						$this->AddClass($sClass, $aFields);
 					}
-					if (empty($aFields))
-					{
-						$aFields = MetaModel::FlattenZList(MetaModel::GetZListItems($sClass, static::DEFAULT_ZLIST_FIELDS));
-					}
-					$this->AddClass($sClass, $aFields);
-				}
-				break;
+					break;
 			}
 		}
 
@@ -128,5 +128,3 @@ class ApprovalBrick extends PortalBrick
 	}
 
 }
-
-?>

@@ -1,19 +1,22 @@
 <?php
-// Copyright (C) 2012-2016 Combodo SARL
-//
-//   This program is free software; you can redistribute it and/or modify
-//   it under the terms of the GNU General Public License as published by
-//   the Free Software Foundation; version 3 of the License.
-//
-//   This program is distributed in the hope that it will be useful,
-//   but WITHOUT ANY WARRANTY; without even the implied warranty of
-//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//   GNU General Public License for more details.
-//
-//   You should have received a copy of the GNU General Public License
-//   along with this program; if not, write to the Free Software
-//   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+/**
+ * Copyright (C) 2013-2020 Combodo SARL
+ *
+ * This file is part of iTop.
+ *
+ * iTop is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * iTop is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ */
 
 /**
  * Module approval-base
@@ -23,14 +26,6 @@
  * @author      Denis Flaven <denis.flaven@combodo.com>
  * @license     http://www.opensource.org/licenses/gpl-3.0.html LGPL
  */
-
-if (is_dir(MODULESROOT.'itop-portal-base'))
-{
-	// If the portal is installed, then it may use the approval brick
-	require_once(MODULESROOT.'approval-base/approvalbrick.class.inc.php');
-	require_once(MODULESROOT.'approval-base/approvalbrickcontroller.class.inc.php');
-	require_once(MODULESROOT.'approval-base/approvalbrickrouter.class.inc.php');
-}
 
 /**
  * An approval process associated to an object
@@ -140,13 +135,21 @@ abstract class _ApprovalScheme_ extends DBObject
 	/**
 	 * Alternative to AddStep: Adds a step IIF the query returns at least one approver
 	 *
-	 * @param DBObject $oObject The source object (query arguments :this->attcode)
-	 * @param string $sApproversQuery OQL giving the approvers
-	 * @param integer $iTimeoutSec The timeout duration if (0 to disable the timeout feature)
-	 * @param boolean $bApproveOnTimeout Set to true to approve in case of timeout for the current step
-	 * @param integer $iExitCondition EXIT_ON_... _FIRST_REJECT, _FIRST_APPROVE, _FIRST_REPLY defaults to the legacy behavior
-	 * @param boolean $bReusePreviousAnswers Set to true to recycle an answer given by an approver at a previous step (if any)
+	 * @param DBObject $oObject               The source object (query arguments :this->attcode)
+	 * @param string   $sApproversQuery       OQL giving the approvers
+	 * @param integer  $iTimeoutSec           The timeout duration if (0 to disable the timeout feature)
+	 * @param boolean  $bApproveOnTimeout     Set to true to approve in case of timeout for the current step
+	 * @param integer  $iExitCondition        EXIT_ON_... _FIRST_REJECT, _FIRST_APPROVE, _FIRST_REPLY defaults to the legacy behavior
+	 * @param boolean  $bReusePreviousAnswers Set to true to recycle an answer given by an approver at a previous step (if any)
+	 *
 	 * @return bool true if a step has been added
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 * @throws \MissingQueryArgument
+	 * @throws \MySQLException
+	 * @throws \MySQLHasGoneAwayException
+	 * @throws \OQLException
+	 * @throws \Exception
 	 */
 	public function AddStepFromQuery(DBObject $oObject, $sApproversQuery, $iTimeoutSec = 0, $bApproveOnTimeout = true, $iExitCondition = self::EXIT_ON_FIRST_REJECT, $bReusePreviousAnswers = true)
 	{
@@ -174,7 +177,15 @@ abstract class _ApprovalScheme_ extends DBObject
 
 	/**
 	 * Helper to build the button and associated dialog, if relevant, enabled, etc.
-	 */	 	
+	 *
+	 * @param      $oPage
+	 * @param      $aStepData
+	 * @param bool $bEditMode
+	 *
+	 * @return string
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreException
+	 */
 	protected function GetReminderButton($oPage, $aStepData, $bEditMode = false)
 	{
 		$sRet = '';
@@ -248,14 +259,22 @@ EOF
 
 	/**
 	 * Render the status in HTML
-	 */	 	
+	 *
+	 * @param      $oPage
+	 * @param bool $bEditMode
+	 *
+	 * @return string
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreException
+	 * @throws \Exception
+	 */
 	public function GetDisplayStatus($oPage, $bEditMode = false)
 	{
-		$sImgOngoing = utils::GetAbsoluteUrlModulesRoot().'approval-base/waiting-reply.png';
-		$sImgApproved = utils::GetAbsoluteUrlModulesRoot().'approval-base/approve.png';
-		$sImgRejected = utils::GetAbsoluteUrlModulesRoot().'approval-base/reject.png';
-		$sImgArrow = utils::GetAbsoluteUrlModulesRoot().'approval-base/arrow-next.png';
-		$sImgBubbleTriangle = utils::GetAbsoluteUrlModulesRoot().'approval-base/bubble-triangle.png';
+		$sImgOngoing = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/waiting-reply.png';
+		$sImgApproved = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/approve.png';
+		$sImgRejected = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/reject.png';
+		$sImgArrow = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/arrow-next.png';
+		$sImgBubbleTriangle = utils::GetAbsoluteUrlModulesRoot().'approval-base/asset/img/bubble-triangle.png';
 
 		$oPage->add_style(
 <<<EOF
@@ -783,6 +802,13 @@ EOF
 	/** Helper to record the end of the process in several cases
 	 * - normal termination
 	 * - abort
+	 *
+	 * @param string $bApproved
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
 	 */
 	protected function RecordEnd($bApproved)
 	{
@@ -813,7 +839,9 @@ EOF
 	 * - there is no more step to process
 	 * 
 	 * On termination: determines + records the final status
-	 * 	 and invokes the relevant verb (DoApprove/DoReject)	 	 
+	 * 	 and invokes the relevant verb (DoApprove/DoReject)
+	 *
+	 * @throws \CoreException
 	 */	 
 	public function StartNextStep()
 	{
@@ -951,8 +979,19 @@ EOF
 	 * Processes a vote given by an approver:
 	 * - find the approver
 	 * - record the answer
-	 * Then, start the next step if the current one is over 
-	 */	 
+	 * Then, start the next step if the current one is over
+	 *
+	 * @param        $iStep
+	 * @param        $oApprover
+	 * @param        $bApprove
+	 * @param null   $oSubstitute
+	 * @param string $sComment
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 */
 	public function OnAnswer($iStep, $oApprover, $bApprove, $oSubstitute = null, $sComment = '')
 	{
 		if ($this->Get('status') != 'ongoing')
@@ -1023,7 +1062,15 @@ EOF
 
 	/**
 	 * Aborting means stopping definitively the ENTIRE process (not only the current step)
-	 */	 
+	 *
+	 * @param $bApprove
+	 * @param $sComment
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 */
 	public function OnAbort($bApprove, $sComment)
 	{
 		if ($this->Get('status') != 'ongoing')
@@ -1061,6 +1108,13 @@ EOF
 
 	/**
 	 * Helper to determine if a given user is expected to give her answer
+	 *
+	 * @param $sContactClass
+	 * @param $iContactId
+	 *
+	 * @return |null
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreException
 	 */
 	public function GetContactPassCode($sContactClass, $iContactId)
 	{
@@ -1103,6 +1157,8 @@ EOF
 
 	/**
 	 * Helper to compute current state start time - this information is not recorded
+	 *
+	 * @throws \CoreException
 	 */
 	public function ComputeLastStart()
 	{
@@ -1119,9 +1175,16 @@ EOF
 		}
 		return $iStepStarted;
 	}
-	 
+
 	/**
 	 * Helper to compute a target time, depending on the working hours
+	 *
+	 * @param $iStartTime
+	 * @param $iDurationSec
+	 *
+	 * @return
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreException
 	 */
 	protected function ComputeDeadline($iStartTime, $iDurationSec)
 	{
@@ -1150,6 +1213,8 @@ EOF
 
 	/**
 	 * Compute the next timeout (depends on the step and the eventual forwards)
+	 *
+	 * @throws \CoreException
 	 */
 	public function ComputeTimeout()
 	{
@@ -1193,7 +1258,9 @@ EOF
 	/**
 	 * A timeout can occur in two conditions:
 	 * - The current step is running out of time: terminate it and start the next one
-	 * - An forward has been declared for an approver who has not yet replied	 
+	 * - An forward has been declared for an approver who has not yet replied
+	 *
+	 * @throws \CoreException
 	 */	 
 	public function OnTimeout()
 	{
@@ -1269,6 +1336,8 @@ EOF
 
 	/**
 	 * Helper to list the expected replies, and send a reminder
+	 *
+	 * @throws \CoreException
 	 */
 	public function GetAwaitedReplies()
 	{
@@ -1398,8 +1467,8 @@ EOF
 	/**
 	 * Lookup for any existing answer (returns information on the first found)
 	 *
-	 * @param $iStrictlyBeforeStep Step before which the search will be made
-	 * @param $aSearchedApproverData The approver which reply should be found
+	 * @param int $iStrictlyBeforeStep Step before which the search will be made
+	 * @param array $aSearchedApproverData The approver which reply should be found
 	 * @return array($iStep, $bApproved, $sComment)
 	 */
 	protected function FindAnswer($iStrictlyBeforeStep, $aSearchedApproverData)
@@ -1432,6 +1501,14 @@ EOF
 		return array($iFoundStep, $bApproved, $sComment);
 	}
 
+	/**
+	 * @param      $sFrom
+	 * @param      $oPage
+	 * @param      $oApprover
+	 * @param      $oObject
+	 * @param      $sToken
+	 * @param null $oSubstitute
+	 */
 	protected function MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
@@ -1440,6 +1517,11 @@ EOF
 		$oPage->add("<div id=\"form_approval_introduction\">".$sIntroduction."</div>\n");
 	}
 
+	/**
+	 * @param        $sFrom
+	 * @param        $oPage
+	 * @param string $sInjectInForm
+	 */
 	protected function MakeFormInputs($sFrom, $oPage, $sInjectInForm = '')
 	{
 		$oPage->add("<div class=\"wizContainer\" id=\"form_approval\">\n");
@@ -1480,6 +1562,14 @@ EOF
 		);
 	}
 
+	/**
+	 * @param      $sFrom
+	 * @param      $oPage
+	 * @param      $oApprover
+	 * @param      $oObject
+	 * @param      $sToken
+	 * @param null $oSubstitute
+	 */
 	protected function MakeFormFooter($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$aParams = array_merge($oObject->ToArgs('object'), $oApprover->ToArgs('approver'));
@@ -1499,7 +1589,14 @@ EOF
 
 	/**
 	 * Build and output the approval form for a given user
-	 **/	
+	 *
+	 * @param      $sFrom
+	 * @param      $oPage
+	 * @param      $oApprover
+	 * @param      $oObject
+	 * @param      $sToken
+	 * @param null $oSubstitute
+	 */
 	public function DisplayApprovalForm($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute = null)
 	{
 		$this->MakeFormHeader($sFrom, $oPage, $oApprover, $oObject, $sToken, $oSubstitute);
@@ -1509,6 +1606,9 @@ EOF
 
 	/**
 	 * Build and output the abort form for the current user
+	 *
+	 * @param $sFrom
+	 * @param $oPage
 	 */
 	public function DisplayAbortForm($sFrom, $oPage)
 	{
@@ -1518,8 +1618,12 @@ EOF
 	}
 
 	/**
-	 * Overridable to change the display of days	
-	 */	
+	 * Overridable to change the display of days
+	 *
+	 * @param $iTime
+	 *
+	 * @return false|string
+	 */
 	public function GetDisplayDay($iTime)
 	{
 		if (method_exists('AttributeDateTime', 'GetFormat'))
@@ -1536,8 +1640,12 @@ EOF
 	}
 
 	/**
-	 * Overridable to change the display of time	
-	 */	
+	 * Overridable to change the display of time
+	 *
+	 * @param $iTime
+	 *
+	 * @return false|string
+	 */
 	public function GetDisplayTime($iTime)
 	{
 		if (method_exists('AttributeDateTime', 'GetFormat'))
@@ -1556,6 +1664,19 @@ EOF
 		return date($sTimeFormat, $iTime);
 	}
 
+	/**
+	 * @param        $iMenuId
+	 * @param        $param
+	 * @param string $sClassFilter
+	 *
+	 * @return array
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 * @throws \MissingQueryArgument
+	 * @throws \MySQLException
+	 * @throws \MySQLHasGoneAwayException
+	 * @throws \OQLException
+	 */
 	static public function GetPopMenuItems($iMenuId, $param, $sClassFilter = 'UserRequest')
 	{
 		$aRet = array();
@@ -1601,9 +1722,14 @@ EOF
 	/**
 	 * API to search for Approvals
 	 *
-	 * @param null $sApproverClass
-	 * @param null $iApproverId
+	 * @param string|null $sApproverClass
+	 * @param int|null $iApproverId
+	 *
 	 * @return array of ApprovalSheme objects
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
+	 * @throws \MySQLException
+	 * @throws \OQLException
 	 */
 	static public function ListOngoingApprovals($sApproverClass = null, $iApproverId = null)
 	{
@@ -1623,8 +1749,13 @@ EOF
 	/**
 	 * API - Approve
 	 *
-	 * @param $oReplier Main approver or a substitute
+	 * @param        $oReplier Main approver or a substitute
 	 * @param string $sComment
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
 	 */
 	public function Approve($oReplier, $sComment = '')
 	{
@@ -1636,8 +1767,13 @@ EOF
 	/**
 	 * API - Reject
 	 *
-	 * @param $oReplier Main approver or a substitute
+	 * @param        $oReplier Main approver or a substitute
 	 * @param string $sComment
+	 *
+	 * @throws \ArchivedObjectException
+	 * @throws \CoreCannotSaveObjectException
+	 * @throws \CoreException
+	 * @throws \CoreUnexpectedValue
 	 */
 	public function Reject($oReplier, $sComment)
 	{
@@ -1914,13 +2050,18 @@ class CheckApprovalTimeout implements iBackgroundProcess
 }
 
 
+/**
+ * Sent when an object enters the waiting for approval state
+ *
+ * @see ApprovalScheme::SendApprovalRequest
+ */
 class TriggerOnApprovalRequest extends TriggerOnObject
 {
 	public static function Init()
 	{
 		$aParams = array
 		(
-			"category" => "core/cmdb,application",
+			"category" => "core/cmdb,application,grant_by_profile",
 			"key_type" => "autoincrement",
 			"name_attcode" => "description",
 			"state_attcode" => "",
@@ -1943,11 +2084,20 @@ class TriggerOnApprovalRequest extends TriggerOnObject
 
 class ActionEmailApprovalRequest extends ActionEmail
 {
+	/**
+	 * Before N°1596 the from field wasn't used, but as it is inherited from {@link ActionEmail} and
+	 * defined as mandatory it was filled with this value. This is also used when creating default actions.
+	 * @since 3.0.0 N°1596
+	 */
+	const LEGACY_DEFAULT_FROM = 'nobody@no.where.org';
+
+	const MODULE_NAME = 'approval-base';
+
 	public static function Init()
 	{
 		$aParams = array
 		(
-			"category" => "core/cmdb,application",
+			"category" => "core/cmdb,application,grant_by_profile",
 			"key_type" => "autoincrement",
 			"name_attcode" => "name",
 			"state_attcode" => "",
@@ -1963,10 +2113,27 @@ class ActionEmailApprovalRequest extends ActionEmail
 		MetaModel::Init_AddAttribute(new AttributeTemplateString("subject_reminder", array("allowed_values"=>null, "sql"=>"subject_reminder", "default_value"=>null, "is_null_allowed"=>true, "depends_on"=>array())));
 
 		// Display lists
-		MetaModel::Init_SetZListItems('details', array('name', 'description', 'status', 'test_recipient', 'cc', 'bcc', 'subject', 'subject_reminder', 'body', 'trigger_list'));
+		MetaModel::Init_SetZListItems('details', array('name', 'description', 'status', 'test_recipient', 'from', 'reply_to', 'cc', 'bcc', 'subject', 'subject_reminder', 'body', 'trigger_list'));
 		MetaModel::Init_SetZListItems('list', array('name', 'status', 'subject')); // Attributes to be displayed for a list
 		// Search criteria
 		MetaModel::Init_SetZListItems('standard_search', array('name','description', 'status', 'subject')); // Criteria of the std search form
+	}
+
+	public static function GetDefaultEmailSender()
+	{
+		$sEmailFrom = MetaModel::GetConfig()->Get('email_default_sender_address');
+		if (empty($sEmailFrom))
+		{
+			$sEmailFrom = static::LEGACY_DEFAULT_FROM;
+		}
+
+		return $sEmailFrom;
+	}
+
+	public function PrefillCreationForm(&$aContextParam)
+	{
+		$this->Set('from', MetaModel::GetModuleSetting(self::MODULE_NAME, 'email_sender'));
+		$this->Set('reply_to', MetaModel::GetModuleSetting(self::MODULE_NAME, 'email_reply_to'));
 	}
 
 	// returns a the list of emails as a string, or a detailed error description
@@ -1974,7 +2141,6 @@ class ActionEmailApprovalRequest extends ActionEmail
 	{
 		return parent::FindRecipients($sRecipAttCode, $aArgs);
 	}
-
 
 	public function DoExecute($oTrigger, $aContextArgs)
 	{
@@ -1985,13 +2151,31 @@ class ActionEmailApprovalRequest extends ActionEmail
 		// Hack the current object in memory, so that the email gets correctly prepared
 		// by the standard implementation of ActionEmail
 		// The current action MUST NOT be saved into the DB!!!
+		/** @var \ApprovalScheme $oScheme */
 		$oScheme = $aContextArgs['approval_scheme->object()'];
+		/** @var cmdbAbstractObject $oObject */
 		$oObject = $aContextArgs['this->object()'];
+		/** @var Contact $oApprover */
 		$oApprover = $aContextArgs['approver->object()'];
 		$sTo = 'SELECT '.get_class($oApprover).' WHERE id = '.$oApprover->GetKey();
 		$this->Set('to', $sTo);
-		$this->Set('from', $oScheme->GetEmailSender($oApprover, $oObject));
-		$this->Set('reply_to', $oScheme->GetEmailReplyTo($oApprover, $oObject));
+
+		$sEmailFrom = $this->Get('from');
+		if (empty($sEmailFrom) || ($sEmailFrom === self::LEGACY_DEFAULT_FROM))
+		{
+			// N°1596 just to keep compatibility with old data, as the 'from' field is now displayed in the form and prefilled
+			$sEmailFrom = MetaModel::GetModuleSetting(self::MODULE_NAME, 'email_sender');
+			$this->Set('from', $sEmailFrom);
+		}
+
+		$sEmailReplyTo = $this->Get('reply_to');
+		if (empty($sEmailReplyTo))
+		{
+			// N°1596 just to keep compatibility with old data as the 'reply_to' field is now displayed in the form and prefilled
+			$sEmailReplyTo = MetaModel::GetModuleSetting(self::MODULE_NAME, 'email_reply_to');
+			$this->Set('reply_to', $sEmailReplyTo);
+		}
+
 		if (($aContextArgs['message_type'] == 'reminder'))
 		{
 			$sReminderSubject = trim($this->Get('subject_reminder'));
@@ -2002,12 +2186,4 @@ class ActionEmailApprovalRequest extends ActionEmail
 		}
 		return parent::DoExecute($oTrigger, $aContextArgs);
 	}
-
-	public function ComputeValues()
-	{
-		// Initialize mandatory value(s)
-		$this->Set('from', 'nobody@no.where.org');
-		return parent::ComputeValues();
-	}
-
 }

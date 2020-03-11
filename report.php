@@ -23,8 +23,8 @@
  * @license     http://www.opensource.org/licenses/gpl-3.0.html LGPL
  */
 
-if (!defined('__DIR__')) define('__DIR__', dirname(__FILE__));
-require_once(__DIR__.'/../../approot.inc.php');
+@include_once(__DIR__.'/../../approot.inc.php');
+@include_once(__DIR__.'/../../../approot.inc.php');
 require_once(APPROOT.'/application/application.inc.php');
 require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 
