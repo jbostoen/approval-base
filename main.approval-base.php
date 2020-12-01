@@ -365,7 +365,7 @@ EOF
 		$iAbortUser = $this->Get('abort_user_id');
 		if ($iAbortUser != 0)
 		{
-			if ($oUser = MetaModel::GetObject('User', $iAbortUser, false))
+			if ($oUser = MetaModel::GetObject('User', $iAbortUser, false, true))
 			{ 
 				$sUserInfo = $oUser->GetFriendlyName();
 			}
