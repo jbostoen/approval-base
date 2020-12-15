@@ -4,9 +4,6 @@
 
 This is the base module used in the approval process extensions for [iTop](https://github.com/Combodo/iTop).
 
-For more information about this module have a look at the corresponding [extension documentation](https://store.itophub.io/en_US/products/combodo-mail-to-ticket-automation).
-
-
 ## Download
 
 Release packages can be found on the [iTop Hub Store](https://store.itophub.io/en_US/taxons/all-extensions). This is the best way to get
